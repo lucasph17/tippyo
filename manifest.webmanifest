@@ -1,0 +1,2 @@
+{"name":"Tippyo","short_name":"Tippyo","description":"Valora a la persona que te atiende","start_url":"./index.html","scope":"./","display":"standalone","orientation":"portrait","background_color":"#080b0e","theme_color":"#0b1116","lang":"es",
+ "icons":[{"src":"icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icon-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
