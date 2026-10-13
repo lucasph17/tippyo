@@ -160,6 +160,7 @@ button.fila{width:100%;text-align:left;display:flex;align-items:center;gap:12px}
 /* gracias */
 .gracias{position:relative;overflow:hidden;text-align:center;padding:34px 18px;min-height:46dvh;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .gracias .btn{width:auto;padding:0 22px}
+.gracias .card{text-align:center;display:flex;flex-direction:column;align-items:center}
 .tick{width:84px;height:84px;margin:0 auto 10px}
 .tick circle{fill:rgba(47,191,91,.14);stroke:var(--good);stroke-width:3;stroke-dasharray:252;stroke-dashoffset:252;animation:trazo .55s var(--ease) .05s forwards}
 .tick path{fill:none;stroke:var(--good);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:50;stroke-dashoffset:50;animation:trazo .4s var(--ease) .45s forwards}
@@ -199,6 +200,12 @@ button.fila{width:100%;text-align:left;display:flex;align-items:center;gap:12px}
 body.has-tabs .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 body.has-tabs .vista{bottom:calc(68px + env(safe-area-inset-bottom))}
 body.has-tabs #flash{bottom:calc(86px + env(safe-area-inset-bottom))}
+.prog{height:6px;border-radius:99px;background:var(--surface3);overflow:hidden}
+.prog i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand),var(--brand-b));transform:scaleX(var(--p));transform-origin:left}
+.enter .prog i{animation:llena .7s var(--ease) .1s both}
+@keyframes llena{from{transform:scaleX(0)}}
+.cupon{border:1.5px dashed rgba(124,187,223,.55);border-radius:14px;padding:12px;text-align:center}
+.cupon.usado{opacity:.5;border-style:solid;border-color:var(--line)}
 .hoja{display:none}
 .barras{display:flex;gap:8px;align-items:flex-end;height:104px;margin-top:8px}
 .bar{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;font-size:11px;color:var(--muted)}
@@ -271,6 +278,8 @@ const avatar=(url,nombre,cls='')=>okFoto(url)?`<img class="ava ${cls}" src="${es
 const estrellas=v=>{let h='<span class="st" aria-hidden="true">';for(let i=1;i<=5;i++)h+=`<i class="${v>=i-.25?'on':''}">★</i>`;return h+'</span>'};
 const aleatorio=n=>{const A='ACDEFGHJKLMNPQRTUVWXY3479';let s='';const r=crypto.getRandomValues(new Uint8Array(n));for(const b of r)s+=A[b%A.length];return s};
 const uuid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=crypto.getRandomValues(new Uint8Array(1))[0]&15;return (c==='x'?r:(r&3|8)).toString(16)}); /* randomUUID solo existe en https/localhost */
+const rolGuardado=()=>{const r=localStorage.getItem('tippyo_rol');return r==='jefe'||r==='cliente'?r:'trabajador'};
+const rutaRol=r=>r==='cliente'?'tarjeta':r;
 const dispositivo=()=>{let d=null;try{d=localStorage.getItem('tippyo_dev')}catch(e){}if(!d){d=uuid();try{localStorage.setItem('tippyo_dev',d)}catch(e){}}return d};
 
 const IC={
@@ -309,6 +318,9 @@ const errTxt=e=>{
   if(/Invalid login credentials/.test(m))return 'Correo o contraseña incorrectos.';
   if(/already registered/.test(m))return 'Ese correo ya tiene cuenta. Entra con tu contraseña.';
   if(/not confirmed/i.test(m))return 'Falta confirmar tu correo: abre el mensaje que te hemos enviado.';
+  if(/not_enough_points/.test(m))return 'No tienes puntos suficientes para este premio.';
+  if(/invalid_coupon/.test(m))return 'Ese cupón no existe o ya se entregó.';
+  if(/invalid_reward/.test(m))return 'Ese premio ya no está disponible.';
   if(/has_team/.test(m))return 'Antes de borrar tu cuenta, da de baja a todo tu equipo.';
   if(/rate limit/i.test(m))return 'Demasiados intentos. Espera unos minutos y vuelve a probar.';
   if(/Failed to fetch|NetworkError/i.test(m))return 'No hay conexión con el servidor. Comprueba tu internet.';
@@ -350,11 +362,12 @@ async function guard(rol,fn){
 async function render(){
   const n=++renderN,r=ruta(),clave=location.hash;let html;
   const nueva=S.pintado!==clave;
-  if(nueva&&['m','jefe','trabajador','c'].includes(r[0]))$app.innerHTML=marco(esqueleto,false);
+  if(nueva&&['m','jefe','trabajador','c','tarjeta'].includes(r[0]))$app.innerHTML=marco(esqueleto,false);
   S.tabs=null;
   try{
     if(r[0]==='m')html=await vCliente(r[1],r[2],r[3]);
     else if(r[0]==='entrar')html=vEntrar(r[1]);
+    else if(r[0]==='tarjeta')html=await guard('cliente',vTarjeta);
     else if(r[0]==='c')html=await vCertificado(r[1]);
     else if(r[0]==='nueva-clave')html=vClave();
     else if(r[0]==='privacidad')html=vPrivacidad();
@@ -384,22 +397,22 @@ const anillo=v=>{const c=2*Math.PI*31;return `<div class="ring"><svg width="78" 
 
 /* ---------- inicio y acceso ---------- */
 function vInicio(){
-  const rol=localStorage.getItem('tippyo_rol')==='jefe'?'jefe':'trabajador';
+  const rol=rutaRol(rolGuardado());
   return `<div class="hero"><div class="logo"><span>★</span></div>
     <h1 class="big">Valora a la persona,<br>no solo al local.</h1></div>
   ${S.user?`<a class="tile" href="#/${rol}"><span class="bub b1">${ico('user',26)}</span><span><b>Mi panel</b><span class="s">${esc(S.user.email)}</span></span><span class="go">${ico('go',20)}</span></a>`:''}
-  <div class="tile"><span class="bub b1">${ico('qr',26)}</span><span><b>Cliente</b><span class="s">Escanea el QR de tu mesa</span></span></div>
+  <a class="tile" href="#/${S.user?'tarjeta':'entrar/cliente'}"><span class="bub b1">${ico('qr',26)}</span><span><b>Cliente</b><span class="s">Escanea el QR de tu mesa · mis puntos</span></span><span class="go">${ico('go',20)}</span></a>
   <a class="tile" href="#/entrar/trabajador"><span class="bub b2">${ico('user',26)}</span><span><b>Trabajador</b><span class="s">Accede con el código de tu local</span></span><span class="go">${ico('go',20)}</span></a>
   <a class="tile" href="#/entrar/jefe"><span class="bub b3">${ico('shop',26)}</span><span><b>Responsable de local</b><span class="s">Equipo, mesas y valoraciones</span></span><span class="go">${ico('go',20)}</span></a>
   ${pie()}`;
 }
 function vEntrar(rol){
-  rol=rol==='jefe'?'jefe':'trabajador';
+  rol=['jefe','cliente'].includes(rol)?rol:'trabajador';
   localStorage.setItem('tippyo_rol',rol);
-  if(S.user){location.hash='#/'+rol;return null}
+  if(S.user){location.hash='#/'+rutaRol(rol);return null}
   const alta=S.form.modo==='alta';
   return `<a class="vol" href="#/">${ico('back',18)}Inicio</a>
-  <div class="row"><span class="tile" style="padding:0;border:0;background:none"><span class="bub ${rol==='jefe'?'b3':'b2'}">${ico(rol==='jefe'?'shop':'user',26)}</span></span><div><div class="k">${rol==='jefe'?'Responsable de local':'Trabajador'}</div><h1 class="big m">${alta?'Crea tu cuenta':'Bienvenido'}</h1></div></div>
+  <div class="row"><span class="tile" style="padding:0;border:0;background:none"><span class="bub b1">${ico({jefe:'shop',cliente:'star'}[rol]||'user',26)}</span></span><div><div class="k">${{jefe:'Responsable de local',cliente:'Cliente'}[rol]||'Trabajador'}</div><h1 class="big m">${alta?'Crea tu cuenta':'Bienvenido'}</h1></div></div>
   <div class="seg" role="group"><button class="${alta?'':'on'}" data-act="modo" data-m="entrar">Entrar</button><button class="${alta?'on':''}" data-act="modo" data-m="alta">Crear cuenta</button></div>
   <form data-form="auth" data-rol="${rol}">
     <div class="campo"><label for="email">Correo</label><input id="email" name="email" type="email" required autocomplete="email" inputmode="email" autocapitalize="none" data-keep="email" value="${esc(S.form.email||'')}"></div>
@@ -416,16 +429,20 @@ async function vCliente(cid,mesa,tok){
   /* Los datos de la mesa se piden una vez por visita: tocar una estrella no debe ir al servidor. */
   const clave=[cid,mesa,tok].join('|');
   if(!S.mesaCache||S.mesaCache.clave!==clave){
-    const [c,e]=await Promise.all([
+    const [c,e,pr]=await Promise.all([
       sb.from('companies').select('name,city').eq('id',cid).maybeSingle(),
-      sb.rpc('who_is_on_shift',{p_company:cid,p_table:+mesa,p_token:tok})]);
+      sb.rpc('who_is_on_shift',{p_company:cid,p_table:+mesa,p_token:tok}),
+      sb.from('rewards').select('id').eq('company_id',cid).eq('active',true).limit(1)]);
     if(c.error)throw c.error;if(e.error)throw e.error;
-    S.mesaCache={clave,co:c.data,eq:e.data||[]};
+    S.mesaCache={clave,co:c.data,eq:e.data||[],premios:!!(pr.data&&pr.data.length)};
   }
   const {co,eq}=S.mesaCache,pop=S.anim;
   if(!co||!eq.length)return tarjeta('No podemos abrir esta mesa','El QR no es de este local o ahora mismo no hay nadie en turno. Pregunta en barra.');
   const cab=`<div><div class="k">${esc(co.city)} · mesa ${esc(mesa)}</div><h1 class="big m">${esc(co.name)}</h1></div>`;
-  if(S.form.hecho)return `<div class="card ok gracias"><svg class="tick" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="40"/><path d="M26 43l11 11 21-23"/></svg><h1 class="big m">Valoración enviada</h1><p class="lead">Gracias por tu opinión.</p><button class="btn ghost" style="margin-top:18px" data-act="otra">Valorar a otra persona</button></div>`;
+  const premioMsg=!S.mesaCache.premios?'':S.user
+    ?(S.form.pts>0?`<div class="card" style="margin-top:16px;width:100%"><b>+${S.form.pts} punto en ${esc(co.name)}</b><div class="tiny muted" style="margin:2px 0 10px">Canjéalos por premios del local.</div><a class="btn sm" href="#/tarjeta">Ver mi tarjeta</a></div>`:'<p class="tiny muted" style="margin:14px 0 0">Hoy ya has sumado puntos por esta persona.</p>')
+    :`<div class="card" style="margin-top:16px;width:100%"><b>Suma puntos con tus valoraciones</b><div class="tiny muted" style="margin:2px 0 10px">Crea tu cuenta y llévate el punto de esta valoración. Premios del local.</div><button class="btn sm" data-act="cuenta-cliente">Crear mi cuenta</button></div>`;
+  if(S.form.hecho)return `<div class="card ok gracias"><svg class="tick" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="40"/><path d="M26 43l11 11 21-23"/></svg><h1 class="big m">Valoración enviada</h1><p class="lead">Gracias por tu opinión.</p>${premioMsg}<button class="btn ghost" style="margin-top:18px" data-act="otra">Valorar a otra persona</button></div>`;
   const t=eq.find(x=>x.stint_id===S.form.sel);
   if(!t)return cab+`<h2 style="font-size:22px">¿Quién te atiende?</h2><div class="grid2">${eq.map(x=>`<button class="pick" data-act="elegir" data-id="${esc(x.stint_id)}">${avatar(x.photo_url,x.full_name,'xl')}<b>${esc(x.full_name.split(' ')[0])}</b><span class="muted tiny">${esc(x.job_title||'')}</span></button>`).join('')}</div>`;
   const nota=S.form.nota||0,com=S.form.com||'';
@@ -455,21 +472,23 @@ async function datosJefe(){
   if(c.error)throw c.error;
   if(!c.data)return {vacio:true};
   const co=c.data;
-  const [st,sh,cd,mm]=await Promise.all([
+  const [st,sh,cd,mm,rw,cu]=await Promise.all([
     sb.from('stints').select('id,job_title,started_at,worker_id,profiles(full_name,job_title,photo_url,photo_pending_url)').eq('company_id',co.id).is('ended_at',null).order('started_at'),
     sb.from('shifts').select('stint_id').eq('day',hoy()),
     sb.from('access_codes').select('code,used_by,created_at').eq('company_id',co.id).order('created_at',{ascending:false}),
-    sb.from('dining_tables').select('table_no,token').eq('company_id',co.id).order('table_no')]);
-  for(const r of [st,sh,cd,mm])if(r.error)throw r.error;
+    sb.from('dining_tables').select('table_no,token').eq('company_id',co.id).order('table_no'),
+    sb.from('rewards').select('id,name,cost,active').eq('company_id',co.id).order('cost'),
+    sb.rpc('company_redemptions',{p_company:co.id})]);
+  for(const r of [st,sh,cd,mm,rw,cu])if(r.error)throw r.error;
   const ids=st.data.map(s=>s.id);
   const rt=ids.length?await sb.from('ratings').select('id,stint_id,stars,comment,created_at').in('stint_id',ids).order('created_at',{ascending:false}).limit(1000):{data:[]};
   if(rt.error)throw rt.error;
-  const v={co,st,sh,cd,mm,rt};S.dj={t:Date.now(),v};return v;
+  const v={co,st,sh,cd,mm,rt,rw,cu};S.dj={t:Date.now(),v};return v;
 }
 async function vJefe(){
   const D=await datosJefe();
   if(D.vacio)return vAltaEmpresa();
-  const {co,st,sh,cd,mm,rt}=D;S.co=co;
+  const {co,st,sh,cd,mm,rt,rw,cu}=D;S.co=co;
   const turno=new Set(sh.data.map(x=>x.stint_id)),por={},nombre={};
   rt.data.forEach(r=>(por[r.stint_id]=por[r.stint_id]||[]).push(r));
   st.data.forEach(s=>{nombre[s.id]=(s.profiles&&s.profiles.full_name)||'—'});
@@ -498,7 +517,7 @@ async function vJefe(){
   const libres=cd.data.filter(x=>!x.used_by),usados=cd.data.length-libres.length;
   const todas=rt.data,enTurno=st.data.filter(s=>turno.has(s.id)).length;
   S.csv=rt.data.map(r=>[fechaES(r.created_at),nombre[r.stint_id],r.stars,r.comment||'']);
-  const JT=[['resumen','Resumen','chart'],['equipo','Equipo','users'],['mesas','Mesas','qr'],['cuenta','Cuenta','cog']];
+  const JT=[['resumen','Resumen','chart'],['equipo','Equipo','users'],['mesas','Mesas','qr'],['premios','Premios','star'],['cuenta','Cuenta','cog']];
   const tab=(JT.find(x=>x[0]===ruta()[1])||JT[0])[0];S.tabs={base:'jefe',items:JT,actual:tab};
   const cab=`<div><div class="k">${esc(co.city)}</div><h1 class="big m">${esc(co.name)}</h1></div>`;
   const pResumen=`<div class="stats">
@@ -519,11 +538,18 @@ async function vJefe(){
     ${S.form.rotar===sel.table_no
       ?`<div class="card warn" style="margin-top:12px;padding:12px"><p class="tiny" style="margin:0 0 10px">El QR actual de la mesa ${sel.table_no} dejará de funcionar. Tendrás que imprimir y pegar el nuevo.</p><div class="row"><button class="btn sm crit" data-act="rotar-ok" data-n="${sel.table_no}">Renovar</button><button class="btn sm ghost" data-act="rotar-no">Cancelar</button></div></div>`
       :`<button class="btn ghost sm" style="margin-top:10px" data-act="rotar" data-n="${sel.table_no}">Renovar el QR de esta mesa</button>`}`:''}</div>`;
+  const pend=cu.data.filter(x=>!x.used_at),hechos=cu.data.length-pend.length;
+  const pPremios=`<div class="card">${sec('star','Premios')}
+    <p class="tiny muted" style="margin:0 0 10px">Los clientes con cuenta suman 1 punto por valoración (máximo 3 al día en tu local), sin importar la nota. Sin premios activos no se reparten puntos.</p>
+    <form data-form="premio" class="row" style="align-items:flex-end"><div class="campo col"><label for="pn">Premio</label><input id="pn" name="nombre" required maxlength="60" placeholder="Café gratis"></div><div class="campo" style="width:92px"><label for="pc">Puntos</label><input id="pc" name="coste" type="number" inputmode="numeric" min="1" max="1000" value="10" required></div><button class="btn sm" style="min-height:52px" type="submit">${ico('plus',16)}</button></form>
+    ${rw.data.length?`<div class="lista" style="margin-top:12px">${rw.data.map(x=>`<div class="row" style="${x.active?'':'opacity:.5'}"><div class="col"><b>${esc(x.name)}</b><div class="tiny muted">${x.cost} puntos${x.active?'':' · desactivado'}</div></div><button class="btn sm ghost" data-act="premio-toggle" data-id="${esc(x.id)}" data-on="${x.active?1:0}">${x.active?'Desactivar':'Activar'}</button></div>`).join('')}</div>`:''}</div>
+  <div class="card">${sec('key','Cupones')}${pend.length?`<div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">${pend.map(x=>`<div class="cupon"><b>${esc(x.reward_name)}</b><div class="codigo" style="font-size:20px;margin:4px 0 8px">${esc(x.code)}</div><button class="btn sm" data-act="entregar" data-code="${esc(x.code)}">${ico('check',16)}Marcar entregado</button></div>`).join('')}</div>`:vacio('key','Cuando un cliente canjee un premio, su cupón saldrá aquí')}
+    ${hechos?`<p class="tiny muted" style="margin:12px 0 0">${hechos} entregado${hechos===1?'':'s'}</p>`:''}</div>`;
   const pCuenta=`${editarLocal(co)}
   <div class="card">${sec('chat','Datos')}<p class="tiny muted" style="margin:0 0 10px">Descarga las valoraciones de tu equipo para Excel.</p><button class="btn ghost" data-act="csv" ${todas.length?'':'disabled'}>Exportar valoraciones (CSV)</button></div>
   <button class="btn ghost" data-act="salir">${ico('out',18)}Cerrar sesión</button>
   ${borrar('Se borra tu cuenta. Tu local se queda sin dueño y las valoraciones de tu equipo se conservan en el historial de cada persona.')}${pie()}`;
-  return cab+({resumen:pResumen,equipo:pEquipo,mesas:pMesas,cuenta:pCuenta})[tab];
+  return cab+({resumen:pResumen,equipo:pEquipo,mesas:pMesas,premios:pPremios,cuenta:pCuenta})[tab];
 }
 
 /* ---------- trabajador ---------- */
@@ -581,9 +607,34 @@ async function vTrabajador(){
   return ({perfil:pPerfil,historial:pHistorial,cuenta:pCuenta})[tab];
 }
 
+/* ---------- cliente: tarjeta de puntos ---------- */
+async function vTarjeta(){
+  let ganados=0;
+  try{const c=await sb.rpc('claim_points',{p_device:dispositivo()});ganados=+c.data||0}catch(e){}
+  const pt=await sb.rpc('my_points');if(pt.error)throw pt.error;
+  const ids=pt.data.map(x=>x.company_id);
+  const [rw,cp]=await Promise.all([
+    ids.length?sb.from('rewards').select('id,company_id,name,cost').eq('active',true).in('company_id',ids).order('cost'):{data:[]},
+    sb.from('redemptions').select('id,company_id,reward_name,code,created_at,used_at').order('created_at',{ascending:false}).limit(50)]);
+  if(rw.error)throw rw.error;if(cp.error)throw cp.error;
+  if(ganados)flash(`Has sumado ${ganados} punto${ganados===1?'':'s'} de tu valoración de hoy.`);
+  const cupones=cp.data;
+  const locales=pt.data.length?pt.data.map(c=>{
+    const prem=rw.data.filter(r=>r.company_id===c.company_id),sig=prem.find(r=>r.cost>c.points);
+    return `<div class="card"><div class="row"><div class="col"><h2>${esc(c.company_name)}</h2><div class="tiny muted">${esc(c.city)}</div></div><div style="text-align:right"><b style="font:700 28px var(--d)" ${''}>${c.points}</b><div class="tiny muted">puntos</div></div></div>
+      ${sig?`<div class="prog" style="margin-top:12px;--p:${Math.min(1,c.points/sig.cost).toFixed(3)}"><i></i></div><div class="tiny muted" style="margin-top:6px">Te faltan ${sig.cost-c.points} para «${esc(sig.name)}»</div>`:''}
+      ${prem.length?`<div class="lista" style="margin-top:10px">${prem.map(r=>`<div class="row"><div class="col"><b>${esc(r.name)}</b><div class="tiny muted">${r.cost} puntos</div></div><button class="btn sm ${c.points>=r.cost?'':'ghost'}" data-act="canjear" data-id="${esc(r.id)}" ${c.points>=r.cost?'':'disabled'}>Canjear</button></div>`).join('')}</div>`:'<p class="tiny muted" style="margin:10px 0 0">Este local no tiene premios activos ahora mismo.</p>'}</div>`}).join('')
+    :`<div class="card">${vacio('star','Valora en un local con premios y tus puntos aparecerán aquí')}</div>`;
+  const vivos=cupones.filter(x=>!x.used_at);
+  return `<div><div class="k">Cliente</div><h1 class="big m">Mi tarjeta</h1></div>${locales}
+  ${cupones.length?`<div class="card">${sec('key','Mis cupones')}<div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">${cupones.slice(0,10).map(x=>`<div class="cupon ${x.used_at?'usado':''}"><b>${esc(x.reward_name)}</b><div class="codigo" style="font-size:20px;margin:4px 0">${esc(x.code)}</div><div class="tiny muted">${x.used_at?'Entregado':'Enséñalo en el local'}</div></div>`).join('')}</div></div>`:''}
+  <button class="btn ghost" data-act="salir">${ico('out',18)}Cerrar sesión</button>
+  ${borrar('Se borran tu cuenta, tus puntos y tus cupones. No se puede deshacer.')}${pie()}`;
+}
+
 /* ---------- contraseña, edición de datos ---------- */
 function vClave(){
-  if(!S.user){location.hash='#/entrar/'+(localStorage.getItem('tippyo_rol')==='jefe'?'jefe':'trabajador');return null}
+  if(!S.user){location.hash='#/entrar/'+rolGuardado();return null}
   return `<h1 class="big m">Nueva contraseña</h1>
   <form data-form="clave"><div class="campo"><label for="p1">Contraseña · mínimo 8</label><input id="p1" name="p1" type="password" required minlength="8" autocomplete="new-password"></div>
   <div class="campo"><label for="p2">Repítela</label><input id="p2" name="p2" type="password" required minlength="8" autocomplete="new-password"></div>
@@ -645,6 +696,7 @@ function vConsentimiento(){
 const acts={
   async salir(){await sb.auth.signOut();S.user=null;S.co=null;location.hash='#/';render()},
   modo(b){S.form.modo=b.dataset.m;render()},
+  'cuenta-cliente'(){S.form={modo:'alta'};localStorage.setItem('tippyo_rol','cliente');location.hash='#/entrar/cliente'},
   elegir(b){S.form.sel=b.dataset.id;S.form.nota=0;S.form.com='';render()},
   nota(b){S.form.nota=+b.dataset.v;S.anim=true;render()},
   chip(b){
@@ -654,9 +706,9 @@ const acts={
   otra(){S.form={};render()},
   async enviar(){
     const r=ruta();
-    const {error}=await sb.rpc('submit_rating',{p_stint:S.form.sel,p_table:+r[2],p_token:r[3],p_stars:S.form.nota,p_comment:S.form.com||'',p_device:dispositivo()});
+    const {data,error}=await sb.rpc('submit_rating',{p_stint:S.form.sel,p_table:+r[2],p_token:r[3],p_stars:S.form.nota,p_comment:S.form.com||'',p_device:dispositivo()});
     if(error)throw error;
-    S.form={hecho:true};render();
+    S.form={hecho:true,pts:+data||0};render();
   },
   async turno(b){
     const id=b.dataset.id,on=b.dataset.on==='1';
@@ -704,6 +756,14 @@ const acts={
     const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
     a.download='valoraciones-'+hoy()+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
     flash('Valoraciones exportadas')},
+  async canjear(b){
+    const {data,error}=await sb.rpc('redeem_reward',{p_reward:b.dataset.id});if(error)throw error;
+    flash(`Cupón ${data} creado. Enséñaselo al responsable.`);render()},
+  async entregar(b){
+    const {error}=await sb.rpc('use_redemption',{p_code:b.dataset.code});if(error)throw error;
+    flash('Cupón entregado.');render()},
+  async 'premio-toggle'(b){
+    const {error}=await sb.from('rewards').update({active:b.dataset.on!=='1'}).eq('id',b.dataset.id);if(error)throw error;render()},
   rotar(b){S.form.rotar=+b.dataset.n;render()},
   'rotar-no'(){S.form.rotar=null;render()},
   async 'rotar-ok'(b){
@@ -750,7 +810,7 @@ const forms={
     }else{
       const {error}=await sb.auth.signInWithPassword(cred);if(error)throw error;
     }
-    location.hash='#/'+rol;
+    location.hash='#/'+rutaRol(rol);
   },
   async empresa(f){
     const d=new FormData(f),t=k=>String(d.get(k)||'').trim();
@@ -772,11 +832,15 @@ const forms={
     try{await subirFoto(file)}catch(e){flash('Perfil creado, pero la foto ha fallado: '+errTxt(e),'err')}
     S.form={};S.pintado=null;render();
   },
+  async premio(f){
+    const d=new FormData(f);
+    const {error}=await sb.from('rewards').insert({company_id:S.co.id,name:String(d.get('nombre')).trim(),cost:parseInt(d.get('coste'),10)});
+    if(error)throw error;flash('Premio creado.');render()},
   async clave(f){
     const d=new FormData(f),p=String(d.get('p1'));
     if(p!==String(d.get('p2')))throw new Error('Las contraseñas no coinciden.');
     const {error}=await sb.auth.updateUser({password:p});if(error)throw error;
-    S.recovery=false;location.hash='#/'+(localStorage.getItem('tippyo_rol')==='jefe'?'jefe':'trabajador');flash('Contraseña actualizada.')},
+    S.recovery=false;location.hash='#/'+rutaRol(rolGuardado());flash('Contraseña actualizada.')},
   async 'perfil-ed'(f){
     const d=new FormData(f);
     const {error}=await sb.from('profiles').update({full_name:String(d.get('nombre')).trim(),job_title:String(d.get('puesto'))}).eq('id',S.user.id);
@@ -824,7 +888,7 @@ sb.auth.onAuthStateChange((ev,ses)=>{
   /* Llegada desde el enlace de confirmación del correo: te lleva a tu panel. */
   if(ev==='SIGNED_IN'&&!S.confirmado&&/access_token|type=(signup|magiclink|recovery)/.test(hashInicial)){
     S.confirmado=true;
-    setTimeout(()=>{location.hash='#/'+(localStorage.getItem('tippyo_rol')==='jefe'?'jefe':'trabajador')},0);
+    setTimeout(()=>{location.hash='#/'+rutaRol(rolGuardado())},0);
     return;
   }
   setTimeout(render,0); /* no llamar a Supabase dentro de este callback: provoca bloqueos */

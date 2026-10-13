@@ -13,7 +13,7 @@
 
   const U={
     jefe:{id:'a0000000-0000-0000-0000-0000000000f1',email:'jefe@demo.invalid'},jefe0:{id:'a0000000-0000-0000-0000-0000000000f0',email:'jefe@demo.invalid'},
-    trabajador:{id:'a0000000-0000-0000-0000-0000000000a1',email:'ana@demo.invalid'},nuevo:{id:'a0000000-0000-0000-0000-0000000000a4',email:'nuevo@demo.invalid'}};
+    trabajador:{id:'a0000000-0000-0000-0000-0000000000a1',email:'ana@demo.invalid'},cliente1:{id:'a0000000-0000-0000-0000-0000000000c1',email:'cliente@demo.invalid'},nuevo:{id:'a0000000-0000-0000-0000-0000000000a4',email:'nuevo@demo.invalid'}};
   let user=U[modo]||null;
 
   const DB={
@@ -37,6 +37,14 @@
       ...[4,4,5].map((s,i)=>({stint_id:'s0',stars:s,comment:'',created_at:dias(80+i),device_id:'z'+i}))]
   };
   DB.ratings.forEach((r,i)=>r.id='r'+i);DB.reports=[];
+  DB.rewards=[{id:'rw1',company_id:CO,name:'Café gratis',cost:5,active:true},{id:'rw2',company_id:CO,name:'Postre de la casa',cost:10,active:true}];
+  DB.point_events=[];DB.redemptions=[];
+  if(modo==='jefe')DB.redemptions.push({id:'d9',user_id:'x',company_id:CO,reward_id:'rw1',reward_name:'Café gratis',cost:5,code:'C-7K9P2Q',created_at:dias(0),used_at:null});
+  if(modo==='cliente1'){
+    for(let i=0;i<18;i++)DB.point_events.push({user_id:U.cliente1.id,company_id:CO,stint_id:'s'+(i%3+1),day:'2026-09-'+String(10+i),points:1});
+    DB.redemptions.push({id:'d1',user_id:U.cliente1.id,company_id:CO,reward_id:'rw1',reward_name:'Café gratis',cost:5,code:'C-A1B2C3',created_at:dias(3),used_at:dias(2)});
+    DB.redemptions.push({id:'d2',user_id:U.cliente1.id,company_id:CO,reward_id:'rw1',reward_name:'Café gratis',cost:5,code:'C-D4E5F6',created_at:dias(0),used_at:null});
+  }
   if(modo==='jefe0')DB.companies=DB.companies.filter(c=>c.id!==CO);
 
   const proj=(r,cols)=>{
@@ -51,6 +59,7 @@
     companies:r=>({id:uid(),...r}),
     profiles:r=>({photo_url:null,photo_pending_url:null,share_history:false,...r}),
     shifts:r=>({day:hoy(),...r}),
+    rewards:r=>({id:uid(),active:true,...r}),
     access_codes:r=>({used_by:null,created_at:new Date().toISOString(),...r}),
     dining_tables:r=>({token:Math.random().toString(36).slice(2,10),...r})};
   const wait=ms=>new Promise(r=>setTimeout(r,ms));
@@ -86,6 +95,16 @@
     return a;
   };
   const err=m=>({data:null,error:{message:m}});
+  const award=(uid_,stint)=>{
+    const st=DB.stints.find(s=>s.id===stint),co=st&&st.company_id,hoy_=hoy();
+    const ow=DB.companies.find(c=>c.id===co);
+    if(!co||!DB.rewards.some(r=>r.company_id===co&&r.active))return 0;
+    if((ow&&ow.owner_id===uid_)||DB.stints.some(s=>s.worker_id===uid_&&s.company_id===co))return 0;
+    if(DB.point_events.filter(e=>e.user_id===uid_&&e.company_id===co&&e.day===hoy_).length>=3)return 0;
+    if(DB.point_events.some(e=>e.user_id===uid_&&e.stint_id===stint&&e.day===hoy_))return 0;
+    DB.point_events.push({user_id:uid_,company_id:co,stint_id:stint,day:hoy_,points:1});return 1;
+  };
+  const saldo=(u,c)=>DB.point_events.filter(e=>e.user_id===u&&e.company_id===c).reduce((x,e)=>x+e.points,0)-DB.redemptions.filter(d=>d.user_id===u&&d.company_id===c).reduce((x,d)=>x+d.cost,0);
   const rpc=async(n,p)=>{
     await wait(160);
     if(n==='who_is_on_shift'){
@@ -96,7 +115,7 @@
     if(n==='submit_rating'){
       if(DB.ratings.some(r=>r.stint_id===p.p_stint&&r.device_id===p.p_device))return err('duplicate key value violates unique constraint "ratings_stint_id_day_device_id_key"');
       DB.ratings.unshift({id:uid(),stint_id:p.p_stint,stars:p.p_stars,comment:p.p_comment,created_at:new Date().toISOString(),device_id:p.p_device});
-      return {data:null,error:null};
+      return {data:user?award(user.id,p.p_stint):0,error:null};
     }
     if(n==='end_stint'){DB.stints.find(s=>s.id===p.p_stint).ended_at=new Date().toISOString();return {data:null,error:null}}
     if(n==='approve_photo'){const w=DB.profiles.find(x=>x.id===p.p_worker);w.photo_url=w.photo_pending_url;return {data:null,error:null}}
@@ -108,6 +127,20 @@
       DB.stints.push({id:uid(),company_id:c.company_id,worker_id:user.id,job_title:pf.job_title,started_at:new Date().toISOString(),ended_at:null});
       return {data:null,error:null};
     }
+    if(n==='claim_points')return {data:0,error:null};
+    if(n==='my_points'){
+      const ids=[...new Set([...DB.point_events,...DB.redemptions].filter(x=>x.user_id===user.id).map(x=>x.company_id))];
+      return {data:ids.map(id=>{const c=DB.companies.find(x=>x.id===id);return {company_id:id,company_name:c.name,city:c.city,points:saldo(user.id,id)}}),error:null};
+    }
+    if(n==='redeem_reward'){
+      const rw=DB.rewards.find(r=>r.id===p.p_reward&&r.active);if(!rw)return err('invalid_reward');
+      if(saldo(user.id,rw.company_id)<rw.cost)return err('not_enough_points');
+      const code='C-'+Math.random().toString(16).slice(2,8).toUpperCase();
+      DB.redemptions.push({id:uid(),user_id:user.id,company_id:rw.company_id,reward_id:rw.id,reward_name:rw.name,cost:rw.cost,code,created_at:new Date().toISOString(),used_at:null});
+      return {data:code,error:null};
+    }
+    if(n==='company_redemptions')return {data:DB.redemptions.filter(d=>d.company_id===p.p_company).map(({id,reward_name,code,created_at,used_at})=>({id,reward_name,code,created_at,used_at})),error:null};
+    if(n==='use_redemption'){const d=DB.redemptions.find(x=>x.code===String(p.p_code).trim().toUpperCase()&&!x.used_at);if(!d)return err('invalid_coupon');d.used_at=new Date().toISOString();return {data:null,error:null}}
     if(n==='delete_my_account'){
       if(DB.companies.some(c=>c.owner_id===user.id&&DB.stints.some(s=>s.company_id===c.id&&!s.ended_at)))return err('has_team');
       DB.profiles=DB.profiles.filter(x=>x.id!==user.id);DB.stints=DB.stints.filter(s=>s.worker_id!==user.id);
