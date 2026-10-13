@@ -542,7 +542,7 @@ async function vJefe(){
   const pPremios=`<div class="card">${sec('star','Premios')}
     <p class="tiny muted" style="margin:0 0 10px">Los clientes con cuenta suman 1 punto por valoración (máximo 3 al día en tu local), sin importar la nota. Sin premios activos no se reparten puntos.</p>
     <form data-form="premio" class="row" style="align-items:flex-end"><div class="campo col"><label for="pn">Premio</label><input id="pn" name="nombre" required maxlength="60" placeholder="Café gratis"></div><div class="campo" style="width:92px"><label for="pc">Puntos</label><input id="pc" name="coste" type="number" inputmode="numeric" min="1" max="1000" value="10" required></div><button class="btn sm" style="min-height:52px" type="submit">${ico('plus',16)}</button></form>
-    ${rw.data.length?`<div class="lista" style="margin-top:12px">${rw.data.map(x=>`<div class="row" style="${x.active?'':'opacity:.5'}"><div class="col"><b>${esc(x.name)}</b><div class="tiny muted">${x.cost} puntos${x.active?'':' · desactivado'}</div></div><button class="btn sm ghost" data-act="premio-toggle" data-id="${esc(x.id)}" data-on="${x.active?1:0}">${x.active?'Desactivar':'Activar'}</button></div>`).join('')}</div>`:''}</div>
+    ${rw.data.length?`<div class="lista" style="margin-top:12px">${rw.data.map(x=>`<div class="row" style="${x.active?'':'opacity:.5'}"><div class="col"><b>${esc(x.name)}</b><div class="tiny muted">${x.cost} puntos${x.active?'':' · desactivado'}</div></div><button class="btn sm ghost" data-act="premio-toggle" data-id="${esc(x.id)}" data-on="${x.active?1:0}">${x.active?'Desactivar':'Activar'}</button>${x.active?'':`<button class="btn sm crit" data-act="premio-borrar" data-id="${esc(x.id)}">Borrar</button>`}</div>`).join('')}</div>`:''}</div>
   <div class="card">${sec('key','Cupones')}${pend.length?`<div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">${pend.map(x=>`<div class="cupon"><b>${esc(x.reward_name)}</b><div class="codigo" style="font-size:20px;margin:4px 0 8px">${esc(x.code)}</div><button class="btn sm" data-act="entregar" data-code="${esc(x.code)}">${ico('check',16)}Marcar entregado</button></div>`).join('')}</div>`:vacio('key','Cuando un cliente canjee un premio, su cupón saldrá aquí')}
     ${hechos?`<p class="tiny muted" style="margin:12px 0 0">${hechos} entregado${hechos===1?'':'s'}</p>`:''}</div>`;
   const pCuenta=`${editarLocal(co)}
@@ -764,6 +764,8 @@ const acts={
     flash('Cupón entregado.');render()},
   async 'premio-toggle'(b){
     const {error}=await sb.from('rewards').update({active:b.dataset.on!=='1'}).eq('id',b.dataset.id);if(error)throw error;render()},
+  async 'premio-borrar'(b){
+    const {error}=await sb.from('rewards').delete().eq('id',b.dataset.id);if(error)throw error;flash('Premio borrado.');render()},
   rotar(b){S.form.rotar=+b.dataset.n;render()},
   'rotar-no'(){S.form.rotar=null;render()},
   async 'rotar-ok'(b){
