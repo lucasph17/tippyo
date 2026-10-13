@@ -202,6 +202,7 @@ button.fila{width:100%;text-align:left;display:flex;align-items:center;gap:12px}
 .doc h2{margin:14px 0 4px}.doc p,.doc li{color:var(--text2);font-size:15px;margin:0 0 6px}.doc ul{padding-left:18px;margin:0}
 .linea-firma{border-bottom:1px solid var(--faint);height:30px;margin:6px 0 2px}
 .pie{display:flex;gap:16px;justify-content:center;font-size:12.5px}.pie a{color:var(--muted)}
+.hoja{display:none}
 .vista{position:fixed;left:6px;bottom:calc(4px + env(safe-area-inset-bottom));z-index:30;font-size:9px;letter-spacing:.08em;font-weight:600;padding:2px 7px;opacity:.8;border-radius:99px;background:rgba(250,178,25,.18);color:var(--warn);border:1px solid rgba(250,178,25,.4);pointer-events:none;white-space:nowrap}
 
 /* cargando */
@@ -210,8 +211,14 @@ button.fila{width:100%;text-align:left;display:flex;align-items:center;gap:12px}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 @media print{
-  body,html{background:#fff} body::before{display:none} .top,#flash,.vista,.wrap>*:not(.qrprint):not(.imprimible){display:none!important}
+  body,html{background:#fff} body::before{display:none} .top,#flash,.vista,.wrap>*:not(.qrprint):not(.imprimible):not(.hoja){display:none!important}
   .wrap{padding:0;max-width:none} .qrprint,.imprimible{display:block!important;border:0!important}
+.hoja{display:none}
+  body.todas .wrap>*:not(.hoja){display:none!important}
+  body.todas .hoja{display:grid!important;grid-template-columns:1fr 1fr;gap:8mm}
+  .pegatina{break-inside:avoid;border:1px dashed #999;padding:8mm 6mm;text-align:center;color:#000;background:#fff}
+  .pegatina .n{font:800 15pt Archivo,Arial,sans-serif}.pegatina .t{font:10pt Arial,sans-serif;color:#444}.pegatina .m{font:600 13pt 'IBM Plex Mono',monospace;margin-top:2mm}
+  .pegatina canvas{width:58mm;height:58mm;margin:3mm auto 0;display:block;image-rendering:pixelated}
   .imprimible,.imprimible *{color:#111!important;background:transparent!important;border-color:#bbb!important;box-shadow:none!important;animation:none!important}
   .imprimible .st i{color:#ccc!important}.imprimible .st i.on{color:#d9a02a!important}.imprimible .ring .f{stroke:#d9a02a!important}.imprimible .ring circle:first-child{stroke:#ddd!important}
 }
@@ -444,7 +451,7 @@ async function vJefe(){
   st.data.forEach(s=>{nombre[s.id]=(s.profiles&&s.profiles.full_name)||'—'});
   const mesas=mm.data,sel=(S.form.mesa&&mesas.find(m=>m.table_no===+S.form.mesa))||mesas[0];
   const url=sel?`${location.origin}${location.pathname}#/m/${co.id}/${sel.table_no}/${sel.token}`:'';
-  const nuevo=S.nuevo;
+  const nuevo=S.nuevo;S.mesas=mesas;
 
   const equipo=st.data.length?st.data.map(s=>{
     const p=s.profiles||{},v=por[s.id]||[],on=turno.has(s.id),pend=p.photo_pending_url&&p.photo_pending_url!==p.photo_url;
@@ -475,7 +482,7 @@ async function vJefe(){
     <form data-form="mesas" class="row" style="align-items:flex-end;margin-top:6px"><div class="campo col"><label for="nmesas">Nº de mesas</label><input id="nmesas" name="n" type="number" inputmode="numeric" min="1" max="60" value="${mesas.length||8}" required></div><button class="btn sm" style="min-height:52px" type="submit">${mesas.length?'Ampliar':'Crear'}</button></form>
     ${sel?`<div class="campo" style="margin-top:14px"><label for="selm">Mesa</label><select id="selm" data-change="mesa">${mesas.map(m=>`<option value="${m.table_no}" ${m.table_no===sel.table_no?'selected':''}>Mesa ${m.table_no}</option>`).join('')}</select></div>
     <div class="qrbox qrprint" style="margin-top:14px"><div class="n">${esc(co.name)}</div><div class="tiny" style="color:#5a6b76">Escanea y valora a quien te atiende</div><canvas data-qr="${esc(url)}" aria-label="QR de la mesa ${sel.table_no}"></canvas><div class="mono tiny" style="margin-top:8px">MESA ${sel.table_no}</div></div>
-    <button class="btn ghost" style="margin-top:12px" data-act="imprimir">${ico('print',18)}Imprimir pegatina</button>`:''}</div>
+    <div class="row" style="margin-top:12px"><button class="btn ghost sm" style="flex:1" data-act="imprimir">${ico('print',16)}Esta mesa</button><button class="btn sm" style="flex:1" data-act="imprimir-todas">${ico('print',16)}Todas (${mesas.length})</button></div>`:''}</div>
   <div class="card">${sec('chat','Últimas valoraciones')}${todas.length?`<div class="lista" style="margin-top:6px">${todas.slice(0,6).map(r=>`<div><div class="row"><b class="col">${esc(nombre[r.stint_id])}</b><span>${estrellas(r.stars)}</span></div>${coment(r)}<div class="tiny muted">${fechaES(r.created_at)}</div></div>`).join('')}</div>`:vacio('star','Cuando alguien valore, saldrá aquí')}</div>
   ${borrar('Se borra tu cuenta. Tu local se queda sin dueño y las valoraciones de tu equipo se conservan en el historial de cada persona.')}${pie()}`;
 }
@@ -611,6 +618,14 @@ const acts={
     try{await navigator.clipboard.writeText(b.dataset.v);flash('Copiado')}catch(e){flash(b.dataset.v)}
   },
   imprimir(){window.print()},
+  'imprimir-todas'(){
+    const base=`${location.origin}${location.pathname}#/m/${S.co.id}/`,h=document.createElement('div');
+    h.className='hoja';
+    h.innerHTML=S.mesas.map(m=>`<div class="pegatina"><div class="n">${esc(S.co.name)}</div><div class="t">Escanea y valora a quien te atiende</div><canvas data-qr="${esc(base+m.table_no+'/'+m.token)}"></canvas><div class="m">MESA ${m.table_no}</div></div>`).join('');
+    document.querySelector('.wrap').appendChild(h);dibujaQR();document.body.classList.add('todas');
+    const fin=()=>{document.body.classList.remove('todas');h.remove();removeEventListener('afterprint',fin)};
+    addEventListener('afterprint',fin);print();
+  },
   async denunciar(b){
     const {error}=await sb.from('reports').insert({rating_id:b.dataset.id,reason:'comentario'});if(error)throw error;
     b.disabled=true;b.textContent='Denunciado';flash('Gracias. Lo revisaremos.')},
