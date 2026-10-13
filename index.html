@@ -431,7 +431,7 @@ async function vJefe(){
   if(!c.data)return vAltaEmpresa();
   const co=S.co=c.data;
   const [st,sh,cd,mm]=await Promise.all([
-    sb.from('stints').select('id,job_title,started_at,worker_id,profiles(full_name,photo_url,photo_pending_url)').eq('company_id',co.id).is('ended_at',null).order('started_at'),
+    sb.from('stints').select('id,job_title,started_at,worker_id,profiles(full_name,job_title,photo_url,photo_pending_url)').eq('company_id',co.id).is('ended_at',null).order('started_at'),
     sb.from('shifts').select('stint_id').eq('day',hoy()),
     sb.from('access_codes').select('code,used_by,created_at').eq('company_id',co.id).order('created_at',{ascending:false}),
     sb.from('dining_tables').select('table_no,token').eq('company_id',co.id).order('table_no')]);
@@ -450,7 +450,7 @@ async function vJefe(){
     const p=s.profiles||{},v=por[s.id]||[],on=turno.has(s.id),pend=p.photo_pending_url&&p.photo_pending_url!==p.photo_url;
     return `<div>
       <div class="row">${avatar(p.photo_url,p.full_name,on?'on':'')}<div class="col"><b>${esc(p.full_name)}</b>
-        <div class="muted tiny">${esc(s.job_title||'')} · desde ${fechaES(s.started_at)}</div>
+        <div class="muted tiny">${esc(s.job_title||p.job_title||'')} · desde ${fechaES(s.started_at)}</div>
         <div class="tiny">${v.length?estrellas(media(v))+' <b>'+fmt(media(v))+'</b> <span class="muted">· '+v.length+'</span>':'<span class="muted">Sin valoraciones</span>'}</div></div>
         <div style="text-align:center"><button class="sw ${on?'on':''}" data-act="turno" data-id="${esc(s.id)}" data-on="${on?1:0}" aria-label="Trabaja hoy" aria-pressed="${on}"><i></i></button><div class="tiny muted" style="margin-top:3px">Hoy</div></div></div>
       ${pend?`<div class="card warn" style="margin-top:10px;padding:12px"><div class="row">${okFoto(p.photo_pending_url)?`<img class="ava xl" style="width:64px;height:64px;border-radius:18px" src="${esc(p.photo_pending_url)}" alt="">`:ico('camera',28)}<div class="col"><b>Foto nueva</b><div class="tiny muted">Cara visible, fondo liso.</div></div></div>
@@ -665,7 +665,8 @@ const forms={
     S.form={};S.pintado=null;render();
   },
   async codigo(f){
-    const {error}=await sb.rpc('redeem_code',{p_code:String(new FormData(f).get('codigo')).trim()});
+    const pf=await sb.from('profiles').select('job_title').eq('id',S.user.id).maybeSingle();
+    const {error}=await sb.rpc('redeem_code',{p_code:String(new FormData(f).get('codigo')).trim(),p_job:(pf.data&&pf.data.job_title)||null});
     if(error)throw error;
     S.pintado=null;flash('Ya estás en la plantilla. Tu jefe te marcará los días que trabajes.');render();
   }
