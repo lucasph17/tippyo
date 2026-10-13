@@ -482,7 +482,10 @@ async function vJefe(){
     <form data-form="mesas" class="row" style="align-items:flex-end;margin-top:6px"><div class="campo col"><label for="nmesas">Nº de mesas</label><input id="nmesas" name="n" type="number" inputmode="numeric" min="1" max="60" value="${mesas.length||8}" required></div><button class="btn sm" style="min-height:52px" type="submit">${mesas.length?'Ampliar':'Crear'}</button></form>
     ${sel?`<div class="campo" style="margin-top:14px"><label for="selm">Mesa</label><select id="selm" data-change="mesa">${mesas.map(m=>`<option value="${m.table_no}" ${m.table_no===sel.table_no?'selected':''}>Mesa ${m.table_no}</option>`).join('')}</select></div>
     <div class="qrbox qrprint" style="margin-top:14px"><div class="n">${esc(co.name)}</div><div class="tiny" style="color:#5a6b76">Escanea y valora a quien te atiende</div><canvas data-qr="${esc(url)}" aria-label="QR de la mesa ${sel.table_no}"></canvas><div class="mono tiny" style="margin-top:8px">MESA ${sel.table_no}</div></div>
-    <div class="row" style="margin-top:12px"><button class="btn ghost sm" style="flex:1" data-act="imprimir">${ico('print',16)}Esta mesa</button><button class="btn sm" style="flex:1" data-act="imprimir-todas">${ico('print',16)}Todas (${mesas.length})</button></div>`:''}</div>
+    <div class="row" style="margin-top:12px"><button class="btn ghost sm" style="flex:1" data-act="imprimir">${ico('print',16)}Esta mesa</button><button class="btn sm" style="flex:1" data-act="imprimir-todas">${ico('print',16)}Todas (${mesas.length})</button></div>
+    ${S.form.rotar===sel.table_no
+      ?`<div class="card warn" style="margin-top:12px;padding:12px"><p class="tiny" style="margin:0 0 10px">El QR actual de la mesa ${sel.table_no} dejará de funcionar. Tendrás que imprimir y pegar el nuevo.</p><div class="row"><button class="btn sm crit" data-act="rotar-ok" data-n="${sel.table_no}">Renovar</button><button class="btn sm ghost" data-act="rotar-no">Cancelar</button></div></div>`
+      :`<button class="btn ghost sm" style="margin-top:10px" data-act="rotar" data-n="${sel.table_no}">Renovar el QR de esta mesa</button>`}`:''}</div>
   <div class="card">${sec('chat','Últimas valoraciones')}${todas.length?`<div class="lista" style="margin-top:6px">${todas.slice(0,6).map(r=>`<div><div class="row"><b class="col">${esc(nombre[r.stint_id])}</b><span>${estrellas(r.stars)}</span></div>${coment(r)}<div class="tiny muted">${fechaES(r.created_at)}</div></div>`).join('')}</div>`:vacio('star','Cuando alguien valore, saldrá aquí')}</div>
   ${borrar('Se borra tu cuenta. Tu local se queda sin dueño y las valoraciones de tu equipo se conservan en el historial de cada persona.')}${pie()}`;
 }
@@ -618,6 +621,13 @@ const acts={
     try{await navigator.clipboard.writeText(b.dataset.v);flash('Copiado')}catch(e){flash(b.dataset.v)}
   },
   imprimir(){window.print()},
+  rotar(b){S.form.rotar=+b.dataset.n;render()},
+  'rotar-no'(){S.form.rotar=null;render()},
+  async 'rotar-ok'(b){
+    const token=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');
+    const {error}=await sb.from('dining_tables').update({token}).eq('company_id',S.co.id).eq('table_no',+b.dataset.n);
+    if(error)throw error;
+    S.form.rotar=null;flash(`QR de la mesa ${b.dataset.n} renovado. Imprime el nuevo.`);render()},
   'imprimir-todas'(){
     const base=`${location.origin}${location.pathname}#/m/${S.co.id}/`,h=document.createElement('div');
     h.className='hoja';
