@@ -338,6 +338,7 @@ async function render(){
     if(r[0]==='m')html=await vCliente(r[1],r[2],r[3]);
     else if(r[0]==='entrar')html=vEntrar(r[1]);
     else if(r[0]==='c')html=await vCertificado(r[1]);
+    else if(r[0]==='nueva-clave')html=vClave();
     else if(r[0]==='privacidad')html=vPrivacidad();
     else if(r[0]==='consentimiento')html=vConsentimiento();
     else if(r[0]==='jefe')html=await guard('jefe',vJefe);
@@ -384,7 +385,8 @@ function vEntrar(rol){
     <div class="campo"><label for="email">Correo</label><input id="email" name="email" type="email" required autocomplete="email" inputmode="email" autocapitalize="none" data-keep="email" value="${esc(S.form.email||'')}"></div>
     <div class="campo"><label for="pw">Contraseña · mínimo 8</label><input id="pw" name="password" type="password" required minlength="8" autocomplete="${alta?'new-password':'current-password'}"></div>
     <button class="btn" type="submit">${alta?'Crear cuenta':'Entrar'}</button>
-  </form>`;
+  </form>
+  ${alta?'':'<button class="btn ghost sm" style="align-self:center" data-act="olvido">¿Has olvidado tu contraseña?</button>'}`;
 }
 
 /* ---------- cliente: sin cuenta, solo con la pegatina ---------- */
@@ -439,7 +441,7 @@ async function vJefe(){
     sb.from('dining_tables').select('table_no,token').eq('company_id',co.id).order('table_no')]);
   for(const r of [st,sh,cd,mm])if(r.error)throw r.error;
   const ids=st.data.map(s=>s.id);
-  const rt=ids.length?await sb.from('ratings').select('id,stint_id,stars,comment,created_at').in('stint_id',ids).order('created_at',{ascending:false}):{data:[]};
+  const rt=ids.length?await sb.from('ratings').select('id,stint_id,stars,comment,created_at').in('stint_id',ids).order('created_at',{ascending:false}).limit(1000):{data:[]};
   if(rt.error)throw rt.error;
   const turno=new Set(sh.data.map(x=>x.stint_id)),por={},nombre={};
   rt.data.forEach(r=>(por[r.stint_id]=por[r.stint_id]||[]).push(r));
@@ -468,7 +470,9 @@ async function vJefe(){
 
   const libres=cd.data.filter(x=>!x.used_by),usados=cd.data.length-libres.length;
   const todas=rt.data,enTurno=st.data.filter(s=>turno.has(s.id)).length;
-  return `<div><div class="k">${esc(co.city)}</div><h1 class="big m">${esc(co.name)}</h1></div>
+  S.csv=rt.data.map(r=>[fechaES(r.created_at),nombre[r.stint_id],r.stars,r.comment||'']);
+  return `<div class="row"><div class="col"><div class="k">${esc(co.city)}</div><h1 class="big m">${esc(co.name)}</h1></div><button class="btn ghost sm" data-act="editar">Editar</button></div>
+  ${S.form.edit?editarLocal(co):''}
   <div class="stats">
     <div class="stat"><b ${todas.length?`data-count="${media(todas).toFixed(1)}" data-dec="1"`:''}>${todas.length?media(todas).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1}):'—'}</b><span>★ Media</span></div>
     <div class="stat"><b>${enTurno}<span style="font-size:15px;color:var(--muted);letter-spacing:0;text-transform:none">/${st.data.length}</span></b><span>Hoy</span></div>
@@ -486,7 +490,7 @@ async function vJefe(){
     ${S.form.rotar===sel.table_no
       ?`<div class="card warn" style="margin-top:12px;padding:12px"><p class="tiny" style="margin:0 0 10px">El QR actual de la mesa ${sel.table_no} dejará de funcionar. Tendrás que imprimir y pegar el nuevo.</p><div class="row"><button class="btn sm crit" data-act="rotar-ok" data-n="${sel.table_no}">Renovar</button><button class="btn sm ghost" data-act="rotar-no">Cancelar</button></div></div>`
       :`<button class="btn ghost sm" style="margin-top:10px" data-act="rotar" data-n="${sel.table_no}">Renovar el QR de esta mesa</button>`}`:''}</div>
-  <div class="card">${sec('chat','Últimas valoraciones')}${todas.length?`<div class="lista" style="margin-top:6px">${todas.slice(0,6).map(r=>`<div><div class="row"><b class="col">${esc(nombre[r.stint_id])}</b><span>${estrellas(r.stars)}</span></div>${coment(r)}<div class="tiny muted">${fechaES(r.created_at)}</div></div>`).join('')}</div>`:vacio('star','Cuando alguien valore, saldrá aquí')}</div>
+  <div class="card">${sec('chat','Últimas valoraciones',todas.length?'<button class="btn sm ghost" data-act="csv">'+ico('copy',15)+'Exportar</button>':'')}${todas.length?`<div class="lista" style="margin-top:6px">${todas.slice(0,6).map(r=>`<div><div class="row"><b class="col">${esc(nombre[r.stint_id])}</b><span>${estrellas(r.stars)}</span></div>${coment(r)}<div class="tiny muted">${fechaES(r.created_at)}</div></div>`).join('')}</div>`:vacio('star','Cuando alguien valore, saldrá aquí')}</div>
   ${borrar('Se borra tu cuenta. Tu local se queda sin dueño y las valoraciones de tu equipo se conservan en el historial de cada persona.')}${pie()}`;
 }
 
@@ -517,7 +521,8 @@ async function vTrabajador(){
   const foto=`<label class="btn ghost sm" style="cursor:pointer;align-self:flex-start">${ico('camera',17)}${pf.photo_url||pend?'Cambiar foto':'Subir foto'}<input type="file" accept="image/*" data-cambiafoto="1" style="display:none"></label>`;
   return `<div class="perfil"><div class="row">${avatar(pf.photo_url,pf.full_name,'xl')}<div class="col"><h1 class="big m" style="font-size:24px">${esc(pf.full_name)}</h1><div class="muted">${esc(pf.job_title||'')}</div>
       ${actual&&actual.companies?`<span class="chip good" style="margin-top:8px">${esc(actual.companies.name)}</span>`:''}</div></div>
-    <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${foto}${pend?`<span class="chip warn">${ico('clock',14)}&nbsp;Foto en revisión</span>`:''}${!pf.photo_url&&!pend?'<span class="chip warn">Sin foto</span>':''}</div></div>
+    <div style="margin-top:14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${foto}<button class="btn ghost sm" data-act="editar">Editar datos</button>${pend?`<span class="chip warn">${ico('clock',14)}&nbsp;Foto en revisión</span>`:''}${!pf.photo_url&&!pend?'<span class="chip warn">Sin foto</span>':''}</div></div>
+  ${S.form.edit?editarPerfil(pf):''}
   ${actual?`<div class="card"><div class="row">${vs.length?anillo(media(vs)):`<span class="bub b3 tile" style="padding:0;width:78px;height:78px;border-radius:24px;display:grid;place-items:center;border:0;background:var(--surface3);color:var(--faint)">${ico('star',32)}</span>`}
       <div class="col"><h2>${esc(actual.companies?actual.companies.name:'—')}</h2><div class="muted tiny">${esc(actual.companies?actual.companies.city:'')} · desde ${fechaES(actual.started_at)}</div>
       <div style="margin-top:4px">${vs.length?`${estrellas(media(vs))} <span class="muted tiny">${vs.length} valoraciones</span>`:'<span class="muted tiny">Aún sin valoraciones</span>'}</div></div></div>
@@ -532,6 +537,24 @@ async function vTrabajador(){
   <div class="card"><div class="row"><div class="col"><h2>Compartir mi historial</h2><p class="tiny muted" style="margin:4px 0 0">${pf.share_history?'Quien te contacte verá tu media y tus etapas.':'Ahora mismo nadie lo ve.'}</p></div><button class="sw ${pf.share_history?'on':''}" data-act="compartir" aria-label="Compartir mi historial" aria-pressed="${!!pf.share_history}"><i></i></button></div></div>
   ${borrar('Se borran tu perfil, tus fotos y todo tu historial. No se puede deshacer.')}${pie()}`;
 }
+
+/* ---------- contraseña, edición de datos ---------- */
+function vClave(){
+  if(!S.user){location.hash='#/entrar/'+(localStorage.getItem('tippyo_rol')==='jefe'?'jefe':'trabajador');return null}
+  return `<h1 class="big m">Nueva contraseña</h1>
+  <form data-form="clave"><div class="campo"><label for="p1">Contraseña · mínimo 8</label><input id="p1" name="p1" type="password" required minlength="8" autocomplete="new-password"></div>
+  <div class="campo"><label for="p2">Repítela</label><input id="p2" name="p2" type="password" required minlength="8" autocomplete="new-password"></div>
+  <button class="btn" type="submit">Guardar</button></form>`;
+}
+const editarPerfil=pf=>`<div class="card"><h2>Mis datos</h2><form data-form="perfil-ed" style="margin-top:10px">
+  <div class="campo"><label for="en">Nombre y apellido</label><input id="en" name="nombre" required maxlength="60" autocomplete="name" value="${esc(pf.full_name)}"></div>
+  <div class="campo"><label for="ep">Puesto</label><select id="ep" name="puesto">${PUESTOS.map(p=>`<option ${p===pf.job_title?'selected':''}>${esc(p)}</option>`).join('')}</select></div>
+  <div class="row"><button class="btn sm" type="submit">Guardar</button><button class="btn sm ghost" type="button" data-act="editar-no">Cancelar</button></div></form></div>`;
+const editarLocal=co=>`<div class="card"><h2>Datos del local</h2><form data-form="local-ed" style="margin-top:10px">
+  <div class="campo"><label for="ln">Nombre</label><input id="ln" name="nombre" required maxlength="80" value="${esc(co.name)}"></div>
+  <div class="campo"><label for="lc">Ciudad</label><input id="lc" name="ciudad" required maxlength="60" value="${esc(co.city)}"></div>
+  <div class="campo"><label for="ld">Dirección</label><input id="ld" name="direccion" maxlength="120" value="${esc(co.address||'')}"></div>
+  <div class="row"><button class="btn sm" type="submit">Guardar</button><button class="btn sm ghost" type="button" data-act="editar-no">Cancelar</button></div></form></div>`;
 
 /* ---------- certificado, privacidad, consentimiento ---------- */
 const RESPONSABLE='[nombre y correo del responsable: pendiente de rellenar]';
@@ -624,6 +647,20 @@ const acts={
   async 'todos-hoy'(){
     const {error}=await sb.from('shifts').insert(S.sinTurno.map(id=>({stint_id:id})));
     if(error)throw error;flash('Todo el equipo marcado para hoy.');render()},
+  async olvido(){
+    const email=String(S.form.email||'').trim();
+    if(!email)throw new Error('Escribe tu correo arriba y vuelve a pulsar.');
+    const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+    if(error)throw error;
+    flash('Si existe una cuenta con ese correo, te hemos enviado un enlace.')},
+  editar(){S.form.edit=true;render()},
+  'editar-no'(){S.form.edit=false;render()},
+  csv(){
+    const q=v=>{v=String(v);if(/^[=+\-@]/.test(v))v="'"+v;return '"'+v.replace(/"/g,'""')+'"'};
+    const txt='\ufeff'+[['Fecha','Persona','Estrellas','Comentario'],...S.csv].map(r=>r.map(q).join(';')).join('\r\n');
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
+    a.download='valoraciones-'+hoy()+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    flash('Valoraciones exportadas')},
   rotar(b){S.form.rotar=+b.dataset.n;render()},
   'rotar-no'(){S.form.rotar=null;render()},
   async 'rotar-ok'(b){
@@ -692,6 +729,19 @@ const forms={
     try{await subirFoto(file)}catch(e){flash('Perfil creado, pero la foto ha fallado: '+errTxt(e),'err')}
     S.form={};S.pintado=null;render();
   },
+  async clave(f){
+    const d=new FormData(f),p=String(d.get('p1'));
+    if(p!==String(d.get('p2')))throw new Error('Las contraseñas no coinciden.');
+    const {error}=await sb.auth.updateUser({password:p});if(error)throw error;
+    S.recovery=false;location.hash='#/'+(localStorage.getItem('tippyo_rol')==='jefe'?'jefe':'trabajador');flash('Contraseña actualizada.')},
+  async 'perfil-ed'(f){
+    const d=new FormData(f);
+    const {error}=await sb.from('profiles').update({full_name:String(d.get('nombre')).trim(),job_title:String(d.get('puesto'))}).eq('id',S.user.id);
+    if(error)throw error;S.form.edit=false;flash('Datos guardados.');render()},
+  async 'local-ed'(f){
+    const d=new FormData(f),t=k=>String(d.get(k)||'').trim();
+    const {error}=await sb.from('companies').update({name:t('nombre'),city:t('ciudad'),address:t('direccion')||null}).eq('id',S.co.id);
+    if(error)throw error;S.form.edit=false;flash('Datos guardados.');render()},
   async codigo(f){
     const pf=await sb.from('profiles').select('job_title').eq('id',S.user.id).maybeSingle();
     const {error}=await sb.rpc('redeem_code',{p_code:String(new FormData(f).get('codigo')).trim(),p_job:(pf.data&&pf.data.job_title)||null});
@@ -727,6 +777,7 @@ document.addEventListener('change',async ev=>{
 /* ---------- arranque ---------- */
 sb.auth.onAuthStateChange((ev,ses)=>{
   S.user=ses?ses.user:null;
+  if(ev==='PASSWORD_RECOVERY'){S.recovery=true;setTimeout(()=>{location.hash='#/nueva-clave'},0);return}
   /* Llegada desde el enlace de confirmación del correo: te lleva a tu panel. */
   if(ev==='SIGNED_IN'&&!S.confirmado&&/access_token|type=(signup|magiclink|recovery)/.test(hashInicial)){
     S.confirmado=true;

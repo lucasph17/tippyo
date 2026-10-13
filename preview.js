@@ -130,7 +130,7 @@
   const auth={
     getSession:async()=>({data:{session:user?{user}:null}}),
     onAuthStateChange(f){cb=f;setTimeout(()=>f('INITIAL_SESSION',user?{user}:null),0);return {data:{subscription:{unsubscribe(){}}}}},
-    signOut:async()=>{user=null;cb&&cb('SIGNED_OUT',null);return {error:null}},
+    resetPasswordForEmail:async()=>({data:{},error:null}),updateUser:async()=>({data:{},error:null}),signOut:async()=>{user=null;cb&&cb('SIGNED_OUT',null);return {error:null}},
     signUp:async()=>({data:{session:null},error:null}),
     signInWithPassword:async()=>{user=U[modo]||U.jefe;cb&&cb('SIGNED_IN',{user});return {error:null}}};
   const storage={from:()=>({list:async()=>({data:[],error:null}),remove:async()=>({data:[],error:null}),upload:async()=>({error:null}),getPublicUrl:()=>({data:{publicUrl:svg('#8a7fc0')}})})};
