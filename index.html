@@ -662,7 +662,7 @@ const editarLocal=co=>`<div class="card"><h2>Datos del local</h2><form data-form
   <button class="btn sm" type="submit" style="align-self:flex-start">Guardar</button></form></div>`;
 
 /* ---------- certificado, privacidad, consentimiento ---------- */
-const RESPONSABLE='[nombre y correo del responsable: pendiente de rellenar]';
+const RESPONSABLE='Lucas Parrilla · luparhu@gmail.com';
 const pie=()=>`<div class="pie"><a href="#/privacidad">Privacidad</a><a href="#/consentimiento">Consentimiento</a><span>Versión de piloto</span></div>`;
 const coment=r=>r.comment?`<div class="muted">“${esc(r.comment)}” <button class="rep" data-act="denunciar" data-id="${esc(r.id)}">Denunciar</button></div>`:'';
 const borrar=txt=>S.form.borrar
