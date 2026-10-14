@@ -124,8 +124,8 @@
     await wait(160);
     if(n==='who_is_on_shift'){
       if(!DB.dining_tables.some(t=>t.company_id===p.p_company&&t.table_no===p.p_table&&t.token===p.p_token))return {data:[],error:null};
-      const ids=DB.shifts.filter(s=>s.day===hoy()).map(s=>s.stint_id);
-      return {data:DB.stints.filter(s=>!s.ended_at&&s.company_id===p.p_company&&ids.includes(s.id)).map(s=>{const w=DB.profiles.find(x=>x.id===s.worker_id);return {stint_id:s.id,full_name:w.full_name,job_title:s.job_title,photo_url:w.photo_url}}),error:null};
+      const ids=DB.shifts.filter(s=>s.day===hoy()).map(s=>s.stint_id),auto=(DB.companies.find(c=>c.id===p.p_company)||{}).auto_shift;
+      return {data:DB.stints.filter(s=>!s.ended_at&&s.company_id===p.p_company&&(auto||ids.includes(s.id))).map(s=>{const w=DB.profiles.find(x=>x.id===s.worker_id);return {stint_id:s.id,full_name:w.full_name,job_title:s.job_title,photo_url:w.photo_url}}),error:null};
     }
     if(n==='submit_rating'){
       if(DB.ratings.some(r=>r.stint_id===p.p_stint&&r.device_id===p.p_device))return err('duplicate key value violates unique constraint "ratings_stint_id_day_device_id_key"');

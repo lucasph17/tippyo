@@ -492,7 +492,7 @@ async function vJefe(){
   const D=await datosJefe();
   if(D.vacio)return vAltaEmpresa();
   const {co,st,sh,cd,mm,rt,rw,cu}=D;S.co=co;
-  const turno=new Set(sh.data.map(x=>x.stint_id)),por={},nombre={};
+  const auto=!!co.auto_shift,turno=new Set(auto?st.data.map(x=>x.id):sh.data.map(x=>x.stint_id)),por={},nombre={};
   rt.data.forEach(r=>(por[r.stint_id]=por[r.stint_id]||[]).push(r));
   st.data.forEach(s=>{nombre[s.id]=(s.profiles&&s.profiles.full_name)||'—'});
   const mesas=mm.data,sel=(S.form.mesa&&mesas.find(m=>m.table_no===+S.form.mesa))||mesas[0];
@@ -509,7 +509,7 @@ async function vJefe(){
       <div class="row">${avatar(p.photo_url,p.full_name,on?'on':'')}<div class="col"><b>${esc(p.full_name)}</b>
         <div class="muted tiny">${esc(s.job_title||p.job_title||'')} · desde ${fechaES(s.started_at)}</div>
         <div class="tiny">${v.length?estrellas(media(v))+' <b>'+fmt(media(v))+'</b> <span class="muted">· '+v.length+'</span>':'<span class="muted">Sin valoraciones</span>'}</div></div>
-        <div style="text-align:center"><button class="sw ${on?'on':''}" data-act="turno" data-id="${esc(s.id)}" data-on="${on?1:0}" aria-label="Trabaja hoy" aria-pressed="${on}"><i></i></button><div class="tiny muted" style="margin-top:3px">En turno</div></div></div>
+        ${auto?'<span class="chip good">En turno</span>':`<div style="text-align:center"><button class="sw ${on?'on':''}" data-act="turno" data-id="${esc(s.id)}" data-on="${on?1:0}" aria-label="Trabaja hoy" aria-pressed="${on}"><i></i></button><div class="tiny muted" style="margin-top:3px">En turno</div></div>`}</div>
       ${pend?`<div class="card warn" style="margin-top:10px;padding:12px"><div class="row">${okFoto(p.photo_pending_url)?`<img class="ava xl" style="width:64px;height:64px;border-radius:18px" src="${esc(p.photo_pending_url)}" alt="">`:ico('camera',28)}<div class="col"><b>Foto nueva</b><div class="tiny muted">Cara visible, fondo liso.</div></div></div>
         <div class="row" style="margin-top:10px"><button class="btn sm" data-act="foto-ok" data-id="${esc(s.worker_id)}">${ico('check',16)}Aprobar</button><button class="btn sm ghost" data-act="foto-no" data-id="${esc(s.worker_id)}">Pedir otra</button></div></div>`:''}
       <div style="margin-top:10px">${S.form.baja===s.id
@@ -529,7 +529,8 @@ async function vJefe(){
     <div class="stat"><b data-count="${todas.length}">${todas.length}</b><span>Votos</span></div></div>
   ${todas.length?`<div class="card">${sec('chart','Esta semana','<span class="tiny muted">valoraciones por día</span>')}<div class="barras">${dias.map(d=>`<div class="bar ${porDia[d]?'':'cero'}"><b>${porDia[d]||''}</b><i style="--h:${porDia[d]/maxD}"></i><em>${'DLMXJVS'[new Date(d+'T12:00:00').getDay()]}</em></div>`).join('')}</div></div>`:''}
   <div class="card">${sec('chat','Últimas valoraciones')}${todas.length?`<div class="lista" style="margin-top:6px">${todas.slice(0,8).map(r=>`<div><div class="row"><b class="col">${esc(nombre[r.stint_id])}</b><span>${estrellas(r.stars)}</span></div>${coment(r)}<div class="tiny muted">${fechaES(r.created_at)}</div></div>`).join('')}</div>`:vacio('star','Cuando alguien valore, saldrá aquí')}</div>`;
-  const pEquipo=`<div class="card">${sec('users','Equipo',S.sinTurno.length>1?'<button class="btn sm ghost" data-act="todos-hoy">Todos hoy</button>':'')}<div class="lista" style="margin-top:6px">${equipo}</div></div>
+  const pEquipo=`<div class="card"><div class="row"><div class="col"><h2>Turno automático</h2><p class="tiny muted" style="margin:4px 0 0">${auto?'Todo tu equipo cuenta como en turno cada día.':'Ahora marcas tú cada día quién trabaja. Si lo olvidas, los clientes no podrán valorar.'}</p></div><button class="sw ${auto?'on':''}" data-act="auto-turno" data-on="${auto?1:0}" aria-label="Turno automático" aria-pressed="${auto}"><i></i></button></div></div>
+  <div class="card">${sec('users','Equipo',S.sinTurno.length>1?'<button class="btn sm ghost" data-act="todos-hoy">Todos hoy</button>':'')}<div class="lista" style="margin-top:6px">${equipo}</div></div>
   <div class="card">${sec('key','Códigos','<button class="btn sm gold" data-act="gen-codigo">'+ico('plus',16)+'Nuevo</button>')}
     ${libres.length?`<div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">${libres.map(x=>`<button class="cod ${nuevo===x.code?'nuevo':''}" data-act="copiar" data-v="${esc(x.code)}" aria-label="Copiar ${esc(x.code)}"><div class="codigo">${esc(x.code)}</div><div class="tiny muted" style="display:flex;gap:6px;justify-content:center;align-items:center">${ico('copy',14)}Toca para copiar · 1 uso</div></button>`).join('')}</div>`:vacio('key','Pulsa Nuevo para crear un código')}
     ${usados?`<p class="tiny muted" style="margin:12px 0 0">${usados} usado${usados===1?'':'s'}</p>`:''}</div>`;
@@ -749,6 +750,12 @@ const acts={
     try{await navigator.clipboard.writeText(b.dataset.v);flash('Copiado')}catch(e){flash(b.dataset.v)}
   },
   imprimir(){window.print()},
+  async 'auto-turno'(b){
+    const on=b.dataset.on==='1';
+    b.classList.toggle('on',!on);b.setAttribute('aria-pressed',String(!on));
+    const {error}=await sb.from('companies').update({auto_shift:!on}).eq('id',S.co.id);
+    if(error){render();throw error}
+    flash(on?'Turno automático desactivado. Marca tú cada día.':'Turno automático activado.');setTimeout(render,260)},
   async 'todos-hoy'(){
     const {error}=await sb.from('shifts').insert(S.sinTurno.map(id=>({stint_id:id})));
     if(error)throw error;flash('Todo el equipo marcado para hoy.');render()},
