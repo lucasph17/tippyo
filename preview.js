@@ -38,10 +38,15 @@
   };
   DB.ratings.forEach((r,i)=>r.id='r'+i);DB.reports=[];
   DB.rewards=[{id:'rw1',company_id:CO,name:'Café gratis',cost:5,active:true},{id:'rw2',company_id:CO,name:'Postre de la casa',cost:10,active:true}];
-  DB.point_events=[];DB.redemptions=[];
+  DB.point_events=[];DB.redemptions=[];DB.tippyo_points=[];DB.platform_redemptions=[];
+  DB.platform_rewards=[
+    {id:'pr1',brand:'Marca de ejemplo A',name:'10 % de descuento (ejemplo)',description:'',cost:10,active:true,codes:['EJ-A1','EJ-A2']},
+    {id:'pr2',brand:'Marca de ejemplo B',name:'Café y bollo (ejemplo)',description:'',cost:25,active:true,codes:['EJ-B1']}];
   if(modo==='jefe')DB.redemptions.push({id:'d9',user_id:'x',company_id:CO,reward_id:'rw1',reward_name:'Café gratis',cost:5,code:'C-7K9P2Q',created_at:dias(0),used_at:null});
   if(modo==='cliente1'){
     for(let i=0;i<18;i++)DB.point_events.push({user_id:U.cliente1.id,company_id:CO,stint_id:'s'+(i%3+1),day:'2026-09-'+String(10+i),points:1});
+    for(let i=0;i<22;i++)DB.tippyo_points.push({user_id:U.cliente1.id,company_id:CO,stint_id:'t'+i,day:'2026-09-'+String(1+i),points:1,avail:i<20?0:Date.now()+2*864e5});
+    DB.platform_redemptions.push({id:'q1',user_id:U.cliente1.id,reward_id:'pr1',brand:'Marca de ejemplo A',name:'10 % de descuento (ejemplo)',cost:5,code:'EJ-USADO',created_at:dias(5)});
     DB.redemptions.push({id:'d1',user_id:U.cliente1.id,company_id:CO,reward_id:'rw1',reward_name:'Café gratis',cost:5,code:'C-A1B2C3',created_at:dias(3),used_at:dias(2)});
     DB.redemptions.push({id:'d2',user_id:U.cliente1.id,company_id:CO,reward_id:'rw1',reward_name:'Café gratis',cost:5,code:'C-D4E5F6',created_at:dias(0),used_at:null});
   }
@@ -104,6 +109,16 @@
     if(DB.point_events.some(e=>e.user_id===uid_&&e.stint_id===stint&&e.day===hoy_))return 0;
     DB.point_events.push({user_id:uid_,company_id:co,stint_id:stint,day:hoy_,points:1});return 1;
   };
+  const awardG=(u,stint)=>{
+    const st=DB.stints.find(s=>s.id===stint),co=st&&st.company_id,hoy_=hoy(),ow=DB.companies.find(c=>c.id===co);
+    if(co!==CO)return 0;
+    if((ow&&ow.owner_id===u)||DB.stints.some(s=>s.worker_id===u&&s.company_id===co))return 0;
+    if(DB.tippyo_points.filter(e=>e.user_id===u&&e.day===hoy_).length>=3)return 0;
+    if(DB.tippyo_points.some(e=>e.user_id===u&&e.stint_id===stint&&e.day===hoy_))return 0;
+    DB.tippyo_points.push({user_id:u,company_id:co,stint_id:stint,day:hoy_,points:1,avail:Date.now()+3*864e5});return 1;
+  };
+  const wallet=u=>({available:DB.tippyo_points.filter(e=>e.user_id===u&&e.avail<=Date.now()).reduce((x,e)=>x+e.points,0)-DB.platform_redemptions.filter(d=>d.user_id===u).reduce((x,d)=>x+d.cost,0),
+                    pending:DB.tippyo_points.filter(e=>e.user_id===u&&e.avail>Date.now()).reduce((x,e)=>x+e.points,0)});
   const saldo=(u,c)=>DB.point_events.filter(e=>e.user_id===u&&e.company_id===c).reduce((x,e)=>x+e.points,0)-DB.redemptions.filter(d=>d.user_id===u&&d.company_id===c).reduce((x,d)=>x+d.cost,0);
   const rpc=async(n,p)=>{
     await wait(160);
@@ -115,7 +130,7 @@
     if(n==='submit_rating'){
       if(DB.ratings.some(r=>r.stint_id===p.p_stint&&r.device_id===p.p_device))return err('duplicate key value violates unique constraint "ratings_stint_id_day_device_id_key"');
       DB.ratings.unshift({id:uid(),stint_id:p.p_stint,stars:p.p_stars,comment:p.p_comment,created_at:new Date().toISOString(),device_id:p.p_device});
-      return {data:user?award(user.id,p.p_stint):0,error:null};
+      return {data:user?{local:award(user.id,p.p_stint),tippyo:awardG(user.id,p.p_stint)}:{local:0,tippyo:0},error:null};
     }
     if(n==='end_stint'){DB.stints.find(s=>s.id===p.p_stint).ended_at=new Date().toISOString();return {data:null,error:null}}
     if(n==='approve_photo'){const w=DB.profiles.find(x=>x.id===p.p_worker);w.photo_url=w.photo_pending_url;return {data:null,error:null}}
@@ -127,7 +142,16 @@
       DB.stints.push({id:uid(),company_id:c.company_id,worker_id:user.id,job_title:pf.job_title,started_at:new Date().toISOString(),ended_at:null});
       return {data:null,error:null};
     }
-    if(n==='claim_points')return {data:0,error:null};
+    if(n==='claim_points')return {data:{local:0,tippyo:0},error:null};
+    if(n==='perks')return {data:{local:DB.rewards.some(r=>r.company_id===p.p_company&&r.active),tippyo:p.p_company===CO},error:null};
+    if(n==='tippyo_wallet')return {data:wallet(user.id),error:null};
+    if(n==='redeem_platform'){
+      const rw=DB.platform_rewards.find(r=>r.id===p.p_reward&&r.active);if(!rw)return err('invalid_reward');
+      if(wallet(user.id).available<rw.cost)return err('not_enough_points');
+      const code=rw.codes.shift();if(!code)return err('sold_out');
+      DB.platform_redemptions.push({id:uid(),user_id:user.id,reward_id:rw.id,brand:rw.brand,name:rw.name,cost:rw.cost,code,created_at:new Date().toISOString()});
+      return {data:{code,brand:rw.brand,name:rw.name},error:null};
+    }
     if(n==='my_points'){
       const ids=[...new Set([...DB.point_events,...DB.redemptions].filter(x=>x.user_id===user.id).map(x=>x.company_id))];
       return {data:ids.map(id=>{const c=DB.companies.find(x=>x.id===id);return {company_id:id,company_name:c.name,city:c.city,points:saldo(user.id,id)}}),error:null};

@@ -318,6 +318,7 @@ const errTxt=e=>{
   if(/Invalid login credentials/.test(m))return 'Correo o contraseña incorrectos.';
   if(/already registered/.test(m))return 'Ese correo ya tiene cuenta. Entra con tu contraseña.';
   if(/not confirmed/i.test(m))return 'Falta confirmar tu correo: abre el mensaje que te hemos enviado.';
+  if(/sold_out/.test(m))return 'Este descuento se ha agotado.';
   if(/not_enough_points/.test(m))return 'No tienes puntos suficientes para este premio.';
   if(/invalid_coupon/.test(m))return 'Ese cupón no existe o ya se entregó.';
   if(/invalid_reward/.test(m))return 'Ese premio ya no está disponible.';
@@ -432,16 +433,18 @@ async function vCliente(cid,mesa,tok){
     const [c,e,pr]=await Promise.all([
       sb.from('companies').select('name,city').eq('id',cid).maybeSingle(),
       sb.rpc('who_is_on_shift',{p_company:cid,p_table:+mesa,p_token:tok}),
-      sb.from('rewards').select('id').eq('company_id',cid).eq('active',true).limit(1)]);
+      sb.rpc('perks',{p_company:cid})]);
     if(c.error)throw c.error;if(e.error)throw e.error;
-    S.mesaCache={clave,co:c.data,eq:e.data||[],premios:!!(pr.data&&pr.data.length)};
+    const pk=pr.data||{};S.mesaCache={clave,co:c.data,eq:e.data||[],perks:pk,premios:!!(pk.local||pk.tippyo)};
   }
   const {co,eq}=S.mesaCache,pop=S.anim;
   if(!co||!eq.length)return tarjeta('No podemos abrir esta mesa','El QR no es de este local o ahora mismo no hay nadie en turno. Pregunta en barra.');
   const cab=`<div><div class="k">${esc(co.city)} · mesa ${esc(mesa)}</div><h1 class="big m">${esc(co.name)}</h1></div>`;
+  const pk=S.mesaCache.perks||{},ganado=[S.form.tp>0?`+${S.form.tp} punto Tippyo`:'',S.form.pts>0?`+${S.form.pts} punto en ${esc(co.name)}`:''].filter(Boolean).join(' · ');
+  const oferta=[pk.tippyo?'puntos Tippyo para canjear por descuentos de marcas':'',pk.local?'premios de este local':''].filter(Boolean).join(' y ');
   const premioMsg=!S.mesaCache.premios?'':S.user
-    ?(S.form.pts>0?`<div class="card" style="margin-top:16px;width:100%"><b>+${S.form.pts} punto en ${esc(co.name)}</b><div class="tiny muted" style="margin:2px 0 10px">Canjéalos por premios del local.</div><a class="btn sm" href="#/tarjeta">Ver mi tarjeta</a></div>`:'<p class="tiny muted" style="margin:14px 0 0">Hoy ya has sumado puntos por esta persona.</p>')
-    :`<div class="card" style="margin-top:16px;width:100%"><b>Suma puntos con tus valoraciones</b><div class="tiny muted" style="margin:2px 0 10px">Crea tu cuenta y llévate el punto de esta valoración. Premios del local.</div><button class="btn sm" data-act="cuenta-cliente">Crear mi cuenta</button></div>`;
+    ?(ganado?`<div class="card" style="margin-top:16px;width:100%"><b>${ganado}</b><div class="tiny muted" style="margin:2px 0 10px">Se acumulan en tu cuenta.</div><a class="btn sm" href="#/tarjeta">Ver mi tarjeta</a></div>`:'<p class="tiny muted" style="margin:14px 0 0">Hoy ya has sumado puntos por esta persona.</p>')
+    :`<div class="card" style="margin-top:16px;width:100%"><b>Suma puntos con tus valoraciones</b><div class="tiny muted" style="margin:2px 0 10px">Crea tu cuenta y llévate el punto de esta valoración: ${oferta}.</div><button class="btn sm" data-act="cuenta-cliente">Crear mi cuenta</button></div>`;
   if(S.form.hecho)return `<div class="card ok gracias"><svg class="tick" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="40"/><path d="M26 43l11 11 21-23"/></svg><h1 class="big m">Valoración enviada</h1><p class="lead">Gracias por tu opinión.</p>${premioMsg}<button class="btn ghost" style="margin-top:18px" data-act="otra">Valorar a otra persona</button></div>`;
   const t=eq.find(x=>x.stint_id===S.form.sel);
   if(!t)return cab+`<h2 style="font-size:22px">¿Quién te atiende?</h2><div class="grid2">${eq.map(x=>`<button class="pick" data-act="elegir" data-id="${esc(x.stint_id)}">${avatar(x.photo_url,x.full_name,'xl')}<b>${esc(x.full_name.split(' ')[0])}</b><span class="muted tiny">${esc(x.job_title||'')}</span></button>`).join('')}</div>`;
@@ -610,24 +613,31 @@ async function vTrabajador(){
 /* ---------- cliente: tarjeta de puntos ---------- */
 async function vTarjeta(){
   let ganados=0;
-  try{const c=await sb.rpc('claim_points',{p_device:dispositivo()});ganados=+c.data||0}catch(e){}
+  try{const c=await sb.rpc('claim_points',{p_device:dispositivo()});ganados=c.data&&typeof c.data==='object'?(+c.data.local||0)+(+c.data.tippyo||0):0}catch(e){}
   const pt=await sb.rpc('my_points');if(pt.error)throw pt.error;
   const ids=pt.data.map(x=>x.company_id);
-  const [rw,cp]=await Promise.all([
+  const [rw,cp,wl,cat,tc]=await Promise.all([
     ids.length?sb.from('rewards').select('id,company_id,name,cost').eq('active',true).in('company_id',ids).order('cost'):{data:[]},
-    sb.from('redemptions').select('id,company_id,reward_name,code,created_at,used_at').order('created_at',{ascending:false}).limit(50)]);
-  if(rw.error)throw rw.error;if(cp.error)throw cp.error;
+    sb.from('redemptions').select('id,company_id,reward_name,code,created_at,used_at').order('created_at',{ascending:false}).limit(50),
+    sb.rpc('tippyo_wallet'),
+    sb.from('platform_rewards').select('id,brand,name,description,cost').order('cost'),
+    sb.from('platform_redemptions').select('id,brand,name,code,created_at').order('created_at',{ascending:false}).limit(20)]);
+  for(const r of [rw,cp,wl,cat,tc])if(r.error)throw r.error;
   if(ganados)flash(`Has sumado ${ganados} punto${ganados===1?'':'s'} de tu valoración de hoy.`);
-  const cupones=cp.data;
+  const disp=(wl.data&&+wl.data.available)||0,pend=(wl.data&&+wl.data.pending)||0;
+  const tippyo=`<div class="card"><div class="row"><div class="col"><div class="k">Puntos Tippyo</div><h2>Mi cuenta</h2><div class="tiny muted">Valen en toda la red de locales</div></div><div style="text-align:right"><b style="font:700 34px var(--d)">${disp}</b><div class="tiny muted">disponibles</div></div></div>
+    ${pend?`<div class="tiny muted" style="margin-top:8px;display:flex;gap:6px;align-items:center">${ico('clock',14)}${pend} pendiente${pend===1?'':'s'}: se activan a los 3 días</div>`:''}
+    ${cat.data.length?`<div class="lista" style="margin-top:10px">${cat.data.map(r=>`<div class="row"><div class="col"><div class="tiny muted">${esc(r.brand)}</div><b>${esc(r.name)}</b><div class="tiny muted">${r.cost} puntos</div></div><button class="btn sm ${disp>=r.cost?'':'ghost'}" data-act="canjear-tippyo" data-id="${esc(r.id)}" ${disp>=r.cost?'':'disabled'}>Canjear</button></div>`).join('')}</div>`
+      :'<p class="tiny muted" style="margin:10px 0 0">Muy pronto: descuentos de marcas aliadas.</p>'}</div>`;
   const locales=pt.data.length?pt.data.map(c=>{
     const prem=rw.data.filter(r=>r.company_id===c.company_id),sig=prem.find(r=>r.cost>c.points);
-    return `<div class="card"><div class="row"><div class="col"><h2>${esc(c.company_name)}</h2><div class="tiny muted">${esc(c.city)}</div></div><div style="text-align:right"><b style="font:700 28px var(--d)" ${''}>${c.points}</b><div class="tiny muted">puntos</div></div></div>
+    return `<div class="card"><div class="row"><div class="col"><div class="k">Puntos del local</div><h2>${esc(c.company_name)}</h2><div class="tiny muted">${esc(c.city)}</div></div><div style="text-align:right"><b style="font:700 28px var(--d)">${c.points}</b><div class="tiny muted">puntos</div></div></div>
       ${sig?`<div class="prog" style="margin-top:12px;--p:${Math.min(1,c.points/sig.cost).toFixed(3)}"><i></i></div><div class="tiny muted" style="margin-top:6px">Te faltan ${sig.cost-c.points} para «${esc(sig.name)}»</div>`:''}
-      ${prem.length?`<div class="lista" style="margin-top:10px">${prem.map(r=>`<div class="row"><div class="col"><b>${esc(r.name)}</b><div class="tiny muted">${r.cost} puntos</div></div><button class="btn sm ${c.points>=r.cost?'':'ghost'}" data-act="canjear" data-id="${esc(r.id)}" ${c.points>=r.cost?'':'disabled'}>Canjear</button></div>`).join('')}</div>`:'<p class="tiny muted" style="margin:10px 0 0">Este local no tiene premios activos ahora mismo.</p>'}</div>`}).join('')
-    :`<div class="card">${vacio('star','Valora en un local con premios y tus puntos aparecerán aquí')}</div>`;
-  const vivos=cupones.filter(x=>!x.used_at);
-  return `<div><div class="k">Cliente</div><h1 class="big m">Mi tarjeta</h1></div>${locales}
-  ${cupones.length?`<div class="card">${sec('key','Mis cupones')}<div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">${cupones.slice(0,10).map(x=>`<div class="cupon ${x.used_at?'usado':''}"><b>${esc(x.reward_name)}</b><div class="codigo" style="font-size:20px;margin:4px 0">${esc(x.code)}</div><div class="tiny muted">${x.used_at?'Entregado':'Enséñalo en el local'}</div></div>`).join('')}</div></div>`:''}
+      ${prem.length?`<div class="lista" style="margin-top:10px">${prem.map(r=>`<div class="row"><div class="col"><b>${esc(r.name)}</b><div class="tiny muted">${r.cost} puntos</div></div><button class="btn sm ${c.points>=r.cost?'':'ghost'}" data-act="canjear" data-id="${esc(r.id)}" ${c.points>=r.cost?'':'disabled'}>Canjear</button></div>`).join('')}</div>`:'<p class="tiny muted" style="margin:10px 0 0">Este local no tiene premios activos ahora mismo.</p>'}</div>`}).join(''):'';
+  const cupT=tc.data.map(x=>`<div class="cupon"><div class="tiny muted">${esc(x.brand)}</div><b>${esc(x.name)}</b><div class="codigo" style="font-size:20px;margin:4px 0">${esc(x.code)}</div><div class="tiny muted">Úsalo en la marca aliada</div></div>`);
+  const cupL=cp.data.slice(0,10).map(x=>`<div class="cupon ${x.used_at?'usado':''}"><div class="tiny muted">Local</div><b>${esc(x.reward_name)}</b><div class="codigo" style="font-size:20px;margin:4px 0">${esc(x.code)}</div><div class="tiny muted">${x.used_at?'Entregado':'Enséñalo en el local'}</div></div>`);
+  return `<div><div class="k">Cliente</div><h1 class="big m">Mi tarjeta</h1></div>${tippyo}${locales}
+  ${cupT.length+cupL.length?`<div class="card">${sec('key','Mis cupones')}<div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">${cupT.concat(cupL).join('')}</div></div>`:''}
   <button class="btn ghost" data-act="salir">${ico('out',18)}Cerrar sesión</button>
   ${borrar('Se borran tu cuenta, tus puntos y tus cupones. No se puede deshacer.')}${pie()}`;
 }
@@ -708,7 +718,7 @@ const acts={
     const r=ruta();
     const {data,error}=await sb.rpc('submit_rating',{p_stint:S.form.sel,p_table:+r[2],p_token:r[3],p_stars:S.form.nota,p_comment:S.form.com||'',p_device:dispositivo()});
     if(error)throw error;
-    S.form={hecho:true,pts:+data||0};render();
+    const d=data&&typeof data==='object'?data:{};S.form={hecho:true,pts:+d.local||0,tp:+d.tippyo||0};render();
   },
   async turno(b){
     const id=b.dataset.id,on=b.dataset.on==='1';
@@ -759,6 +769,9 @@ const acts={
   async canjear(b){
     const {data,error}=await sb.rpc('redeem_reward',{p_reward:b.dataset.id});if(error)throw error;
     flash(`Cupón ${data} creado. Enséñaselo al responsable.`);render()},
+  async 'canjear-tippyo'(b){
+    const {data,error}=await sb.rpc('redeem_platform',{p_reward:b.dataset.id});if(error)throw error;
+    flash(`Descuento listo: ${data.code}`);render()},
   async entregar(b){
     const {error}=await sb.rpc('use_redemption',{p_code:b.dataset.code});if(error)throw error;
     flash('Cupón entregado.');render()},
