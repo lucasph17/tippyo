@@ -9,7 +9,8 @@
   const uid=()=>crypto.randomUUID();
   const CO='c0000000-0000-0000-0000-000000000001',CO2='c0000000-0000-0000-0000-000000000002';
   const dias=n=>new Date(Date.now()-n*864e5).toISOString();
-  const A=i=>window.tippyoAvatarURL?window.tippyoAvatarURL(i):svg('#7cbbdf');
+  const FOTOS=new URLSearchParams(location.search).get('fotos')==='1';window.TIPPYO_FOTOS=FOTOS;
+  const A=i=>FOTOS?'demo/p'+(i%6)+'.jpg':(window.tippyoAvatarURL?window.tippyoAvatarURL(i):svg('#7cbbdf'));
   const svg=(c)=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${c}"/><circle cx="32" cy="25" r="11" fill="#fff" opacity=".85"/><path d="M10 64c2-17 14-24 22-24s20 7 22 24z" fill="#fff" opacity=".85"/></svg>`);
 
   const U={

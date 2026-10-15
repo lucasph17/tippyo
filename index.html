@@ -274,7 +274,7 @@ const fmt=n=>n.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDi
 const media=a=>a.length?a.reduce((x,r)=>x+r.stars,0)/a.length:0;
 const fechaES=d=>d?String(d).slice(0,10).split('-').reverse().join('/'):'';
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const okFoto=u=>typeof u==='string'&&(u.startsWith(SUPABASE_URL+'/storage/v1/object/public/photos/')||(!!PREVIEW&&u.startsWith('data:image/')));
+const okFoto=u=>typeof u==='string'&&(u.startsWith(SUPABASE_URL+'/storage/v1/object/public/photos/')||(!!PREVIEW&&(u.startsWith('data:image/')||u.startsWith('demo/'))));
 const ini=n=>String(n||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
 const tono=n=>{let h=0;for(const c of String(n||''))h=(h*31+c.charCodeAt(0))%360;return h};
 const avatar=(url,nombre,cls='')=>okFoto(url)?`<img class="ava ${cls}" src="${esc(url)}" alt="">`
@@ -401,7 +401,7 @@ function cuenta(nueva){
 const anillo=v=>{const c=2*Math.PI*31;return `<div class="ring"><svg width="78" height="78" viewBox="0 0 78 78" aria-hidden="true"><circle cx="39" cy="39" r="31" stroke="var(--surface3)"/><circle class="f" cx="39" cy="39" r="31" style="--c:${c.toFixed(1)};stroke-dashoffset:${(c*(1-v/5)).toFixed(1)}"/></svg><b data-count="${v}" data-dec="1">${v.toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1})}</b></div>`};
 
 /* ---------- inicio y acceso ---------- */
-const caras=()=>window.tippyoAvatarURL?`<div class="caras" aria-hidden="true">${[0,3,2,5,4,1].map((n,i)=>`<img src="${window.tippyoAvatarURL(n)}" alt="" style="animation-delay:${(i*.38).toFixed(2)}s">`).join('')}</div>`:'';
+const caras=()=>window.tippyoAvatarURL?`<div class="caras" aria-hidden="true">${[0,3,2,5,4,1].map((n,i)=>`<img src="${window.TIPPYO_FOTOS?'demo/p'+(n%6)+'.jpg':window.tippyoAvatarURL(n)}" alt="" style="animation-delay:${(i*.38).toFixed(2)}s">`).join('')}</div>`:'';
 function vInicio(){
   const rol=rutaRol(rolGuardado());
   return `<div class="hero"><div class="logo"><span>★</span></div>
