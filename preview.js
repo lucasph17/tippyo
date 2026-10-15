@@ -49,6 +49,7 @@
   };
   DB.ratings.forEach((r,i)=>r.id='r'+i);DB.reports=[];
   DB.rewards=[{id:'rw1',company_id:CO,name:'Café gratis',cost:5,active:true},{id:'rw2',company_id:CO,name:'Postre de la casa',cost:10,active:true}];
+  DB.scans=[];if(modo==='jefe'){for(let d=0;d<7;d++){const day=new Date(Date.now()-d*864e5).toLocaleDateString('sv-SE',{timeZone:'Europe/Madrid'});for(let k=0;k<4+((d*3)%5);k++)DB.scans.push({company_id:CO,table_no:1+k%4,day,device_id:'s'+d+'-'+k})}}
   DB.point_events=[];DB.redemptions=[];DB.tippyo_points=[];DB.platform_redemptions=[];
   DB.platform_rewards=[
     {id:'pr1',brand:'Marca de ejemplo A',name:'10 % de descuento (ejemplo)',description:'',cost:10,active:true,codes:['EJ-A1','EJ-A2']},
@@ -105,7 +106,7 @@
     const a={
       select(c){o.cols=c||'*';return a},insert(p){o.op='insert';o.pay=p;return a},update(p){o.op='update';o.pay=p;return a},
       delete(){o.op='delete';return a},upsert(p){o.op='upsert';o.pay=p;return a},
-      eq(k,v){o.f.push(r=>r[k]===v);return a},is(k,v){o.f.push(r=>(r[k]==null)===(v===null));return a},in(k,l){o.f.push(r=>l.includes(r[k]));return a},
+      eq(k,v){o.f.push(r=>r[k]===v);return a},gte(k,v){o.f.push(r=>r[k]>=v);return a},is(k,v){o.f.push(r=>(r[k]==null)===(v===null));return a},in(k,l){o.f.push(r=>l.includes(r[k]));return a},
       order(k,x){o.ord=[k,!x||x.ascending!==false];return a},limit(n){o.lim=n;return a},maybeSingle(){o.single=true;return a},
       then(ok,ko){return run(o).then(ok,ko)}};
     return a;
@@ -153,6 +154,7 @@
       DB.stints.push({id:uid(),company_id:c.company_id,worker_id:user.id,job_title:pf.job_title,started_at:new Date().toISOString(),ended_at:null});
       return {data:null,error:null};
     }
+    if(n==='log_scan'){const d=hoy();if(!DB.scans.some(s=>s.company_id===p.p_company&&s.table_no===p.p_table&&s.day===d&&s.device_id===p.p_device))DB.scans.push({company_id:p.p_company,table_no:p.p_table,day:d,device_id:p.p_device});return {data:null,error:null}}
     if(n==='claim_points')return {data:{local:0,tippyo:0},error:null};
     if(n==='perks')return {data:{local:DB.rewards.some(r=>r.company_id===p.p_company&&r.active),tippyo:p.p_company===CO},error:null};
     if(n==='tippyo_wallet')return {data:wallet(user.id),error:null};
