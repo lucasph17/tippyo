@@ -206,6 +206,9 @@ body.has-tabs #flash{bottom:calc(86px + env(safe-area-inset-bottom))}
 @keyframes llena{from{transform:scaleX(0)}}
 .cupon{border:1.5px dashed rgba(124,187,223,.55);border-radius:14px;padding:12px;text-align:center}
 .cupon.usado{opacity:.5;border-style:solid;border-color:var(--line)}
+.caras{display:flex;padding-left:14px}
+.caras img{width:62px;height:62px;border-radius:19px;border:3px solid var(--ink);margin-left:-14px;animation:flota 4.2s ease-in-out infinite;box-shadow:0 8px 20px rgba(0,0,0,.35)}
+@keyframes flota{50%{transform:translateY(-7px)}}
 .hoja{display:none}
 .barras{display:flex;gap:8px;align-items:flex-end;height:104px;margin-top:8px}
 .bar{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;font-size:11px;color:var(--muted)}
@@ -237,6 +240,7 @@ body.has-tabs #flash{bottom:calc(86px + env(safe-area-inset-bottom))}
 </head>
 <body>
 <div id="app"></div>
+<script src="avatars.js"></script>
 <script src="preview.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
@@ -397,10 +401,11 @@ function cuenta(nueva){
 const anillo=v=>{const c=2*Math.PI*31;return `<div class="ring"><svg width="78" height="78" viewBox="0 0 78 78" aria-hidden="true"><circle cx="39" cy="39" r="31" stroke="var(--surface3)"/><circle class="f" cx="39" cy="39" r="31" style="--c:${c.toFixed(1)};stroke-dashoffset:${(c*(1-v/5)).toFixed(1)}"/></svg><b data-count="${v}" data-dec="1">${v.toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1})}</b></div>`};
 
 /* ---------- inicio y acceso ---------- */
+const caras=()=>window.tippyoAvatarURL?`<div class="caras" aria-hidden="true">${[0,3,2,5,4,1].map((n,i)=>`<img src="${window.tippyoAvatarURL(n)}" alt="" style="animation-delay:${(i*.38).toFixed(2)}s">`).join('')}</div>`:'';
 function vInicio(){
   const rol=rutaRol(rolGuardado());
   return `<div class="hero"><div class="logo"><span>★</span></div>
-    <h1 class="big">Valora a la persona,<br>no solo al local.</h1></div>
+    <h1 class="big">Valora a la persona,<br>no solo al local.</h1>${caras()}</div>
   ${S.user?`<a class="tile" href="#/${rol}"><span class="bub b1">${ico('user',26)}</span><span><b>Mi panel</b><span class="s">${esc(S.user.email)}</span></span><span class="go">${ico('go',20)}</span></a>`:''}
   <a class="tile" href="#/${S.user?'tarjeta':'entrar/cliente'}"><span class="bub b1">${ico('qr',26)}</span><span><b>Cliente</b><span class="s">Escanea el QR de tu mesa · mis puntos</span></span><span class="go">${ico('go',20)}</span></a>
   <a class="tile" href="#/entrar/trabajador"><span class="bub b2">${ico('user',26)}</span><span><b>Trabajador</b><span class="s">Accede con el código de tu local</span></span><span class="go">${ico('go',20)}</span></a>

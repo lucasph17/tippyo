@@ -9,6 +9,7 @@
   const uid=()=>crypto.randomUUID();
   const CO='c0000000-0000-0000-0000-000000000001',CO2='c0000000-0000-0000-0000-000000000002';
   const dias=n=>new Date(Date.now()-n*864e5).toISOString();
+  const A=i=>window.tippyoAvatarURL?window.tippyoAvatarURL(i):svg('#7cbbdf');
   const svg=(c)=>'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${c}"/><circle cx="32" cy="25" r="11" fill="#fff" opacity=".85"/><path d="M10 64c2-17 14-24 22-24s20 7 22 24z" fill="#fff" opacity=".85"/></svg>`);
 
   const U={
@@ -20,20 +21,29 @@
     companies:[{id:CO,owner_id:'a0000000-0000-0000-0000-0000000000f1',name:'Bar La Lola',city:'Valencia',address:null,description:null},
                {id:CO2,owner_id:'a0000000-0000-0000-0000-0000000000f2',name:'Cafetería Mar',city:'Castellón',address:null,description:null}],
     profiles:[
-      {id:'a0000000-0000-0000-0000-0000000000a1',full_name:'Ana Pérez',job_title:'Camarera',photo_url:svg('#d98a6c'),photo_pending_url:svg('#d98a6c'),share_history:false},
-      {id:'a0000000-0000-0000-0000-0000000000a2',full_name:'Marc Soler',job_title:'Barra',photo_url:null,photo_pending_url:svg('#5f8fb3'),share_history:false},
-      {id:'a0000000-0000-0000-0000-0000000000a3',full_name:'Lía Gómez',job_title:'Cocina',photo_url:svg('#7aa874'),photo_pending_url:svg('#7aa874'),share_history:false}],
+      {id:'a0000000-0000-0000-0000-0000000000a1',full_name:'Ana Pérez',job_title:'Camarera',photo_url:A(0),photo_pending_url:A(0),share_history:false},
+      {id:'a0000000-0000-0000-0000-0000000000a2',full_name:'Marc Soler',job_title:'Barra',photo_url:null,photo_pending_url:A(1),share_history:false},
+      {id:'a0000000-0000-0000-0000-0000000000a3',full_name:'Lía Gómez',job_title:'Camarera',photo_url:A(2),photo_pending_url:A(2),share_history:false},
+      {id:'a0000000-0000-0000-0000-0000000000b4',full_name:'Carlos Ruiz',job_title:'Camarero',photo_url:A(3),photo_pending_url:A(3),share_history:false},
+      {id:'a0000000-0000-0000-0000-0000000000b5',full_name:'Sofía Martín',job_title:'Camarera',photo_url:A(4),photo_pending_url:A(4),share_history:false},
+      {id:'a0000000-0000-0000-0000-0000000000b6',full_name:'Hugo Navarro',job_title:'Barista',photo_url:A(5),photo_pending_url:A(5),share_history:false}],
     stints:[
       {id:'s0',company_id:CO2,worker_id:'a0000000-0000-0000-0000-0000000000a1',job_title:'Camarera',started_at:dias(160),ended_at:dias(70)},
       {id:'s1',company_id:CO,worker_id:'a0000000-0000-0000-0000-0000000000a1',job_title:'Camarera',started_at:dias(60),ended_at:null},
       {id:'s2',company_id:CO,worker_id:'a0000000-0000-0000-0000-0000000000a2',job_title:'Barra',started_at:dias(30),ended_at:null},
-      {id:'s3',company_id:CO,worker_id:'a0000000-0000-0000-0000-0000000000a3',job_title:'Cocina',started_at:dias(9),ended_at:null}],
+      {id:'s3',company_id:CO,worker_id:'a0000000-0000-0000-0000-0000000000a3',job_title:'Camarera',started_at:dias(9),ended_at:null},
+      {id:'s4',company_id:CO,worker_id:'a0000000-0000-0000-0000-0000000000b4',job_title:'Camarero',started_at:dias(45),ended_at:null},
+      {id:'s5',company_id:CO,worker_id:'a0000000-0000-0000-0000-0000000000b5',job_title:'Camarera',started_at:dias(20),ended_at:null},
+      {id:'s6',company_id:CO,worker_id:'a0000000-0000-0000-0000-0000000000b6',job_title:'Barista',started_at:dias(14),ended_at:null}],
     access_codes:[{code:'LA-K7M2',company_id:CO,used_by:null,created_at:dias(1)},{code:'LA-X9PQ',company_id:CO,used_by:'a0000000-0000-0000-0000-0000000000a3',created_at:dias(9)}],
-    shifts:[{stint_id:'s1',day:hoy()},{stint_id:'s2',day:hoy()}],
+    shifts:['s1','s2','s4','s5','s6'].map(id=>({stint_id:id,day:hoy()})),
     dining_tables:[1,2,3,4].map(n=>({company_id:CO,table_no:n,token:'demo'+n})),
     ratings:[
       ...[5,5,4,5,5,4,5].map((s,i)=>({stint_id:'s1',stars:s,comment:['Rapidísima y muy simpática','','Todo perfecto','Nos recomendó un vino buenísimo','','Atenta en todo momento','Gracias'][i],created_at:dias(i),device_id:'x'+i})),
       ...[4,5].map((s,i)=>({stint_id:'s2',stars:s,comment:i?'Muy buen café':'',created_at:dias(i+2),device_id:'y'+i})),
+      ...[5,4,5,5,4,5].map((s,i)=>({stint_id:'s4',stars:s,comment:['Un crack, muy atento','','Nos hizo reír toda la cena','','',''][i],created_at:dias(i+1),device_id:'c'+i})),
+      ...[4,5,4].map((s,i)=>({stint_id:'s5',stars:s,comment:i===1?'Super amable con los niños':'',created_at:dias(i+3),device_id:'d'+i})),
+      ...[5,5,4,5].map((s,i)=>({stint_id:'s6',stars:s,comment:i===0?'El mejor café de la zona':'',created_at:dias(i),device_id:'e'+i})),
       ...[4,4,5].map((s,i)=>({stint_id:'s0',stars:s,comment:'',created_at:dias(80+i),device_id:'z'+i}))]
   };
   DB.ratings.forEach((r,i)=>r.id='r'+i);DB.reports=[];
