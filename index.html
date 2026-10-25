@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
-<meta name="theme-color" content="#0b1116">
-<meta name="color-scheme" content="dark">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1116">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f8fb">
+<meta name="color-scheme" content="dark light">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,14 +22,27 @@
 :root{
   --ink:#080b0e; --surface:#11171c; --surface2:#182028; --surface3:#202a34; --line:#25303a;
   --brand:#4e7f9c; --brand-b:#7cbbdf; --gold:#f2c14e; --gold-d:#d9a02a;
-  --text:#eef3f6; --text2:#b6c3cd; --muted:#8697a4; --faint:#5d6d79;
+  --text:#eef3f6; --text2:#b6c3cd; --muted:#8697a4; --faint:#7b8b97;
   --good:#2fbf5b; --warn:#fab219; --crit:#e5584f;
   --d:"Archivo","Helvetica Neue",Arial,sans-serif; --b:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif; --m:"IBM Plex Mono",Menlo,monospace;
   --ease:cubic-bezier(.23,1,.32,1);
+  --bar:rgba(8,11,14,.78); --flash:rgba(24,32,40,.97); --on-gold:#06121a; --good-t:#6fe08f; --crit-t:#ee8a82; --strong:#fff;
+}
+/* Tema claro automático: se activa solo si el móvil está en modo claro (mejor a pleno sol y para vista cansada). */
+@media (prefers-color-scheme:light){:root{
+  --ink:#f4f8fb; --surface:#ffffff; --surface2:#eef3f7; --surface3:#dbe5ed; --line:#d0dce6;
+  --brand:#2f6a8a; --brand-b:#1f5f84; --gold:#e0a100; --gold-d:#b98200;
+  --text:#0f1b24; --text2:#3a4b58; --muted:#566874; --faint:#788a96;
+  --good:#1f9d49; --warn:#a86a00; --crit:#c8372d;
+  --bar:rgba(244,248,251,.85); --flash:rgba(255,255,255,.98); --on-gold:#fff; --good-t:#177a39; --crit-t:#b02a21; --strong:#0f1b24;
+}
+body::before{background:radial-gradient(60% 70% at 50% 0%,rgba(47,106,138,.12),transparent 75%)}
+.card,.tile,.stat,.pick,.seg{box-shadow:0 1px 2px rgba(15,27,36,.05)}
+.flash{box-shadow:0 14px 40px -10px rgba(15,27,36,.28)}
 }
 *{box-sizing:border-box}
 html{background:var(--ink);-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
-body{margin:0;min-height:100dvh;background:var(--ink);color:var(--text);font-family:var(--b);font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{margin:0;min-height:100dvh;background:var(--ink);color:var(--text);font-family:var(--b);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
 /* luz de fondo que respira, solo decorativa */
 body::before{content:"";position:fixed;inset:0 0 auto 0;height:50dvh;z-index:-1;pointer-events:none;background:radial-gradient(60% 70% at 50% 0%,rgba(78,127,156,.20),transparent 75%)}
 h1,h2,h3{font-family:var(--d);margin:0;text-wrap:balance}
@@ -40,12 +54,12 @@ input,select,textarea{font-size:16px}
 
 /* marco */
 .top{position:sticky;top:0;z-index:5;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  background:rgba(8,11,14,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.05)}
-.marca{display:flex;align-items:center;gap:9px;font-family:var(--d);font-weight:800;letter-spacing:.16em;color:#fff;text-decoration:none;font-size:14px}
+  background:var(--bar);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.05)}
+.marca{display:flex;align-items:center;gap:9px;font-family:var(--d);font-weight:800;letter-spacing:.16em;color:var(--strong);text-decoration:none;font-size:15px}
 .marca i{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(140deg,var(--brand-b),var(--brand));color:#fff;font-style:normal;font-size:14px}
 .quien{display:flex;gap:8px;align-items:center;min-width:0}
-.quien span{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
-.icbtn{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:var(--surface2);color:var(--text2);transition:transform .14s var(--ease)}
+.quien span{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.icbtn{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--surface2);color:var(--text2);transition:transform .14s var(--ease)}
 .icbtn:active{transform:scale(.93)}
 .wrap{max-width:480px;margin:0 auto;padding:20px 16px calc(64px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
 .enter>*:not(#flash){animation:sube .34s var(--ease) both}
@@ -55,12 +69,12 @@ input,select,textarea{font-size:16px}
 .ic{flex:0 0 auto}
 
 /* texto */
-.big{font-size:30px;font-weight:700;letter-spacing:-.025em;line-height:1.12}
-.big.m{font-size:26px}
+.big{font-size:32px;font-weight:700;letter-spacing:-.025em;line-height:1.12}
+.big.m{font-size:28px}
 .lead{color:var(--text2);margin:6px 0 0}
-.muted{color:var(--muted)}.tiny{font-size:12.5px}.mono{font-family:var(--m)}
-.k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600}
-h2{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.muted{color:var(--muted)}.tiny{font-size:14.5px}.mono{font-family:var(--m)}
+.k{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
 
 /* tarjetas y fichas */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:block;text-decoration:none;color:inherit}
@@ -72,8 +86,8 @@ h2{font-size:18px;font-weight:700;letter-spacing:-.01em}
   transition:transform .16s var(--ease),border-color .16s}
 .tile:active{transform:scale(.975)}
 .tile .bub{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;flex:0 0 auto}
-.tile b{font-family:var(--d);font-size:19px;letter-spacing:-.01em;display:block}
-.tile span.s{color:var(--muted);font-size:14px}
+.tile b{font-family:var(--d);font-size:21px;letter-spacing:-.01em;display:block}
+.tile span.s{color:var(--muted);font-size:15.5px}
 .tile .go{margin-left:auto;color:var(--faint);transition:transform .2s var(--ease)}
 .b1,.b2,.b3{background:rgba(124,187,223,.12);color:var(--brand-b)!important;border:1px solid rgba(124,187,223,.22)}
 .hero{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding-top:6px}
@@ -81,21 +95,21 @@ h2{font-size:18px;font-weight:700;letter-spacing:-.01em}
 .logo span{display:block}
 
 /* botones */
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;padding:0 18px;border-radius:12px;background:var(--brand);color:#fff;font-weight:600;text-decoration:none;
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;padding:0 18px;border-radius:14px;background:var(--brand);color:#fff;font-size:17px;font-weight:600;text-decoration:none;
   transition:transform .14s var(--ease),opacity .2s,filter .2s}
 .btn:active{transform:scale(.97)}
-.btn.gold{background:var(--brand-b);color:#06121a}
+.btn.gold{background:var(--brand-b);color:var(--on-gold)}
 .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text2)}
-.btn.sm{min-height:40px;font-size:14px;border-radius:12px;width:auto;padding:0 14px}
-.btn.crit{background:transparent;border:1px solid rgba(229,88,79,.55);color:#ee8a82}
+.btn.sm{min-height:46px;font-size:15.5px;border-radius:12px;width:auto;padding:0 14px}
+.btn.crit{background:transparent;border:1px solid rgba(229,88,79,.55);color:var(--crit-t)}
 .btn[disabled]{opacity:.4;pointer-events:none;filter:saturate(.4)}
 @media (hover:hover) and (pointer:fine){.tile:hover{border-color:var(--brand)}.tile:hover .go{transform:translateX(4px)}.btn:hover{filter:brightness(1.08)}}
 
 .row{display:flex;flex-direction:row;align-items:center;gap:12px}
 .col{flex:1;min-width:0}
 .seg{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px;gap:4px;position:relative}
-.seg button{min-height:42px;border-radius:10px;color:var(--muted);font-weight:600;transition:color .2s,background .2s}
-.seg button.on{background:var(--surface3);color:#fff}
+.seg button{min-height:46px;font-size:16px;border-radius:10px;color:var(--muted);font-weight:600;transition:color .2s,background .2s}
+.seg button.on{background:var(--surface3);color:var(--strong)}
 
 /* avatares */
 .ava{width:48px;height:48px;border-radius:14px;flex:0 0 auto;object-fit:cover;display:grid;place-items:center;font-family:var(--d);font-weight:800;color:#fff;box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px transparent;transition:box-shadow .25s}
@@ -105,22 +119,22 @@ h2{font-size:18px;font-weight:700;letter-spacing:-.01em}
 /* estrellas, caras */
 .st i{font-style:normal;color:var(--surface3)}.st i.on{color:var(--gold)}
 .estrellas{display:flex;justify-content:center;gap:4px}
-.estrellas button{font-size:46px;line-height:1;padding:2px 3px;color:var(--surface3);transition:color .14s,transform .14s var(--ease)}
+.estrellas button{font-size:50px;line-height:1;padding:2px 3px;color:var(--surface3);transition:color .14s,transform .14s var(--ease)}
 .estrellas button.on{color:var(--gold)}
 .estrellas button:active{transform:scale(.88)}
 .estrellas button.pop{animation:pop .2s var(--ease)}
 @keyframes pop{40%{transform:scale(1.12)}}
-.cara-t{text-align:center;font-weight:600;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--text2);min-height:18px}
+.cara-t{text-align:center;font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);min-height:18px}
 .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.chip{display:inline-flex;align-items:center;padding:6px 12px;border-radius:99px;font-size:13px;font-weight:600;border:1px solid var(--line);color:var(--muted);background:transparent;transition:transform .14s var(--ease),background .2s,color .2s,border-color .2s}
+.chip{display:inline-flex;align-items:center;padding:8px 14px;border-radius:99px;font-size:15px;font-weight:600;border:1px solid var(--line);color:var(--muted);background:transparent;transition:transform .14s var(--ease),background .2s,color .2s,border-color .2s}
 button.chip:active{transform:scale(.94)}
 .chip.on{background:rgba(124,187,223,.14);border-color:rgba(124,187,223,.6);color:var(--brand-b)}
-.chip.good{color:#6fe08f;border-color:rgba(47,191,91,.5)}.chip.warn{color:var(--warn);border-color:rgba(250,178,25,.5)}
+.chip.good{color:var(--good-t);border-color:rgba(47,191,91,.5)}.chip.warn{color:var(--warn);border-color:rgba(250,178,25,.5)}
 
 /* formularios */
 .campo{display:flex;flex-direction:column;gap:6px}
-.campo label{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.campo input,.campo select,.campo textarea{width:100%;min-height:52px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;transition:border-color .2s,box-shadow .2s}
+.campo label{font-size:15px;color:var(--text2);font-weight:600}
+.campo input,.campo select,.campo textarea{width:100%;min-height:56px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;transition:border-color .2s,box-shadow .2s}
 .campo input:focus,.campo select:focus,.campo textarea:focus{outline:0;border-color:var(--brand-b);box-shadow:0 0 0 4px rgba(124,187,223,.14)}
 .campo textarea{resize:none;min-height:70px}
 form{display:flex;flex-direction:column;gap:14px}
@@ -130,8 +144,8 @@ input[type=file]::file-selector-button{border:0;border-radius:10px;background:va
 /* aviso flotante */
 #flash:empty{display:none}
 #flash{position:fixed;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom));z-index:20;padding:0 16px;pointer-events:none}
-.flash{max-width:448px;margin:0 auto;padding:13px 16px;border-radius:16px;font-size:14.5px;font-weight:500;display:flex;gap:10px;align-items:center;
-  background:rgba(24,32,40,.96);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 14px 40px -10px rgba(0,0,0,.7);animation:sube .3s var(--ease) both}
+.flash{max-width:448px;margin:0 auto;padding:14px 16px;border-radius:16px;font-size:16px;font-weight:500;display:flex;gap:10px;align-items:center;
+  background:var(--flash);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 14px 40px -10px rgba(0,0,0,.7);animation:sube .3s var(--ease) both}
 .flash.ok{border:1px solid rgba(47,191,91,.55)}.flash.err{border:1px solid rgba(229,88,79,.6)}
 
 /* códigos, interruptores */
@@ -152,9 +166,9 @@ button.fila{width:100%;text-align:left;display:flex;align-items:center;gap:12px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pick{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:18px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--line);transition:transform .16s var(--ease),border-color .2s}
 .pick:active{transform:scale(.96)}
-.pick b{font-family:var(--d);font-size:17px;line-height:1.15}
+.pick b{font-family:var(--d);font-size:18px;line-height:1.15}
 @media (hover:hover) and (pointer:fine){.pick:hover{border-color:var(--brand)}}
-.vol{align-self:flex-start;display:inline-flex;gap:6px;align-items:center;color:var(--muted);font-size:14px;padding:6px 10px 6px 4px;border-radius:10px}
+.vol{align-self:flex-start;display:inline-flex;gap:6px;align-items:center;color:var(--muted);font-size:16px;padding:10px 12px 10px 4px;border-radius:10px}
 .centro{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
 
 /* gracias */
@@ -167,10 +181,10 @@ button.fila{width:100%;text-align:left;display:flex;align-items:center;gap:12px}
 @keyframes trazo{to{stroke-dashoffset:0}}
 
 /* jefe y trabajador */
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:12px 8px;text-align:center}
-.stat b{display:block;font-family:var(--d);font-size:24px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
-.stat span{font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.stat b{display:block;font-family:var(--d);font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.stat>span{display:block;margin-top:3px;font-size:14px;line-height:1.2;color:var(--muted);font-weight:600}
 .ring{position:relative;width:78px;height:78px;flex:0 0 auto}
 .ring svg{transform:rotate(-90deg)}
 .ring circle{fill:none;stroke-width:7;stroke-linecap:round}
@@ -189,13 +203,13 @@ button.fila{width:100%;text-align:left;display:flex;align-items:center;gap:12px}
 .qrbox{background:#fff;color:#0d1418;border-radius:18px;padding:20px;text-align:center}
 .qrbox canvas{max-width:100%;height:auto;margin:10px auto 0;display:block}
 .qrbox .n{font-family:var(--d);font-weight:800;font-size:19px}
-.rep{font-size:11px;color:var(--faint);text-decoration:underline;padding:0 4px}
-.doc h2{margin:14px 0 4px}.doc p,.doc li{color:var(--text2);font-size:15px;margin:0 0 6px}.doc ul{padding-left:18px;margin:0}
+.rep{font-size:14px;color:var(--muted);text-decoration:underline;padding:8px 6px;margin:-8px -2px}
+.doc h2{margin:14px 0 4px}.doc p,.doc li{color:var(--text2);font-size:16.5px;margin:0 0 6px}.doc ul{padding-left:18px;margin:0}
 .linea-firma{border-bottom:1px solid var(--faint);height:30px;margin:6px 0 2px}
-.pie{display:flex;gap:16px;justify-content:center;font-size:12.5px}.pie a{color:var(--muted)}.pie span{color:var(--faint)}
-.tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;justify-content:center;background:rgba(8,11,14,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+.pie{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:14.5px}.pie a{color:var(--muted)}.pie span{color:var(--faint)}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:15;display:flex;justify-content:center;background:var(--bar);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
 .tabs-in{display:flex;width:100%;max-width:480px}
-.tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:12px;color:var(--muted);text-decoration:none;font-size:11px;font-weight:600;transition:color .15s,transform .14s var(--ease)}
+.tabs a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;border-radius:12px;color:var(--muted);text-decoration:none;font-size:12.5px;font-weight:600;transition:color .15s,transform .14s var(--ease)}
 .tabs a.on{color:var(--brand-b)}.tabs a:active{transform:scale(.94)}
 body.has-tabs .wrap{padding-bottom:calc(96px + env(safe-area-inset-bottom))}
 body.has-tabs .vista{bottom:calc(68px + env(safe-area-inset-bottom))}
@@ -206,7 +220,8 @@ body.has-tabs #flash{bottom:calc(86px + env(safe-area-inset-bottom))}
 .paso{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);color:inherit;text-decoration:none;transition:transform .14s var(--ease)}
 .paso:last-child{border-bottom:0;padding-bottom:2px}.paso:active{transform:scale(.985)}
 .paso .num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;font-weight:700;font-size:14px;border:1.5px solid var(--brand-b);color:var(--brand-b)}
-.paso.ok .num{background:var(--brand-b);color:#08121a}.paso.ok b{color:var(--muted);font-weight:500;text-decoration:line-through}
+.paso.ok .num{background:var(--brand-b);color:var(--on-gold)}.paso.ok b{color:var(--muted);font-weight:500;text-decoration:line-through}
+.quiet{color:var(--muted);text-decoration:underline;font-size:15px;min-height:44px;padding:0 4px}
 .ava.sm{width:36px;height:36px;border-radius:11px;font-size:14px}
 .rank{display:flex;align-items:center;gap:12px}.rank .pos{width:20px;text-align:center;font-family:var(--d);font-weight:700;color:var(--muted)}
 @keyframes llena{from{transform:scaleX(0)}}
@@ -302,6 +317,7 @@ const IC={
   star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z"/>',
   chat:'<path d="M4 5h16v11H9l-5 4z"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+  aa:'<path d="M3 19l5-13 5 13M5 14h6M15 19l3.2-8 3.2 8M16.3 16.8h3.8"/>',
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   camera:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
@@ -362,7 +378,7 @@ async function subirFoto(file){
 
 /* ---------- marco y rutas ---------- */
 const ruta=()=>location.hash.replace(/^#\/?/,'').split('/').filter(Boolean).map(decodeURIComponent);
-const marco=(html,entra)=>`<div class="top"><a class="marca" href="#/"><i>★</i>${esc(MARCA.toUpperCase())}</a>${S.user?`<div class="quien"><span>${esc(S.user.email)}</span><button class="icbtn" data-act="salir" aria-label="Salir">${ico('out',19)}</button></div>`:''}</div><main class="wrap${entra?' enter':''}"><div id="flash">${flashHtml()}</div>${html}</main>${navTabs()}${PREVIEW?'<div class="vista">VISTA PREVIA</div>':''}`;
+const marco=(html,entra)=>`<div class="top"><a class="marca" href="#/"><i>★</i>${esc(MARCA.toUpperCase())}</a><div class="quien">${S.user?`<span>${esc(S.user.email)}</span>`:''}<button class="icbtn" data-act="tam" aria-label="Cambiar el tamaño de la letra">${ico('aa',21)}</button>${S.user?`<button class="icbtn" data-act="salir" aria-label="Salir">${ico('out',19)}</button>`:''}</div></div><main class="wrap${entra?' enter':''}"><div id="flash">${flashHtml()}</div>${html}</main>${navTabs()}${PREVIEW?'<div class="vista">VISTA PREVIA</div>':''}`;
 const navTabs=()=>{const t=S.tabs;if(!t||t.base!==ruta()[0]||!S.user)return '';
   return `<nav class="tabs" aria-label="Secciones"><div class="tabs-in">${t.items.map(([k,n,i])=>`<a href="#/${t.base}/${k}" class="${t.actual===k?'on':''}" ${t.actual===k?'aria-current="page"':''}>${ico(i,22)}<span>${n}</span></a>`).join('')}</div></nav>`};
 const esqueleto='<div class="sk" style="height:110px"></div><div class="sk"></div><div class="sk" style="height:150px"></div>';
@@ -430,6 +446,7 @@ function vEntrar(rol){
   <form data-form="auth" data-rol="${rol}">
     <div class="campo"><label for="email">Correo</label><input id="email" name="email" type="email" required autocomplete="email" inputmode="email" autocapitalize="none" data-keep="email" value="${esc(S.form.email||'')}"></div>
     <div class="campo"><label for="pw">Contraseña · mínimo 8</label><input id="pw" name="password" type="password" required minlength="8" autocomplete="${alta?'new-password':'current-password'}"></div>
+    <button type="button" class="btn ghost sm" style="align-self:flex-start" data-act="ver-clave">Mostrar contraseña</button>
     <button class="btn" type="submit">${alta?'Crear cuenta':'Entrar'}</button>
   </form>
   ${alta?'':'<button class="btn ghost sm" style="align-self:center" data-act="olvido">¿Has olvidado tu contraseña?</button>'}`;
@@ -458,17 +475,18 @@ async function vCliente(cid,mesa,tok){
   const premioMsg=!S.mesaCache.premios?'':S.user
     ?(ganado?`<div class="card" style="margin-top:16px;width:100%"><b>${ganado}</b><div class="tiny muted" style="margin:2px 0 10px">Se acumulan en tu cuenta.</div><a class="btn sm" href="#/tarjeta">Ver mi tarjeta</a></div>`:'<p class="tiny muted" style="margin:14px 0 0">Hoy ya has sumado puntos por esta persona.</p>')
     :`<div class="card" style="margin-top:16px;width:100%"><b>Suma puntos con tus valoraciones</b><div class="tiny muted" style="margin:2px 0 10px">Crea tu cuenta y llévate el punto de esta valoración: ${oferta}.</div><button class="btn sm" data-act="cuenta-cliente">Crear mi cuenta</button></div>`;
-  if(S.form.hecho)return `<div class="card ok gracias"><svg class="tick" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="40"/><path d="M26 43l11 11 21-23"/></svg><h1 class="big m">Valoración enviada</h1><p class="lead">Gracias por tu opinión.</p>${premioMsg}<button class="btn ghost" style="margin-top:18px" data-act="otra">Valorar a otra persona</button></div>`;
+  if(S.form.hecho)return `<div class="card ok gracias"><svg class="tick" viewBox="0 0 84 84" aria-hidden="true"><circle cx="42" cy="42" r="40"/><path d="M26 43l11 11 21-23"/></svg><h1 class="big m">¡Gracias!</h1><p class="lead">${S.form.nom?'Tu valoración ya le llega a '+esc(S.form.nom)+'.':'Tu valoración ya está enviada.'}</p>${premioMsg}<button class="btn ghost" style="margin-top:18px" data-act="otra">Valorar a otra persona</button></div>`;
   const t=eq.find(x=>x.stint_id===S.form.sel);
-  if(!t)return cab+`<h2 style="font-size:22px">¿Quién te atiende?</h2><div class="grid2">${eq.map(x=>`<button class="pick" data-act="elegir" data-id="${esc(x.stint_id)}">${avatar(x.photo_url,x.full_name,'xl')}<b>${esc(x.full_name.split(' ')[0])}</b><span class="muted tiny">${esc(x.job_title||'')}</span></button>`).join('')}</div>`;
+  if(!t)return cab+`<div><h2 style="font-size:24px">¿Quién te atiende?</h2><p class="lead" style="font-size:16px">Toca a la persona que quieras valorar. Es anónimo: no te pedimos nombre ni correo.</p></div><div class="grid2">${eq.map(x=>`<button class="pick" data-act="elegir" data-id="${esc(x.stint_id)}">${avatar(x.photo_url,x.full_name,'xl')}<b>${esc(x.full_name.split(' ')[0])}</b><span class="muted tiny">${esc(x.job_title||'')}</span></button>`).join('')}</div>`;
   const nota=S.form.nota||0,com=S.form.com||'';
   return `<button class="vol" data-act="otra">${ico('back',18)}Otra persona</button>
   <div class="centro">${avatar(t.photo_url,t.full_name,'xl')}<h2 style="font-size:22px;margin-top:6px">${esc(t.full_name)}</h2><span class="muted">${esc(t.job_title||'')}</span></div>
   <div class="estrellas" role="group" aria-label="Nota">${[1,2,3,4,5].map(i=>`<button class="${nota>=i?'on':''} ${pop&&nota===i?'pop':''}" data-act="nota" data-v="${i}" aria-label="${i} estrellas">★</button>`).join('')}</div>
   <div class="cara-t" aria-live="polite">${CARAS_T[nota]||'Toca una estrella'}</div>
   <div class="chips">${ETIQ.map(x=>`<button class="chip ${com.includes(x)?'on':''}" data-act="chip" data-v="${x}">${x}</button>`).join('')}</div>
-  <div class="campo"><textarea id="com" data-keep="com" maxlength="120" aria-label="Comentario" placeholder="Comentario (opcional)">${esc(com)}</textarea></div>
-  <button class="btn gold" data-act="enviar" ${nota?'':'disabled'}>${nota?'Enviar':'Elige una nota'}</button>`;
+  <div class="campo"><textarea id="com" data-keep="com" maxlength="120" aria-label="Comentario" placeholder="¿Quieres añadir algo? (opcional)">${esc(com)}</textarea></div>
+  <button class="btn gold" data-act="enviar" ${nota?'':'disabled'}>${nota?'Enviar mi valoración':'Primero elige una nota'}</button>
+  <p class="tiny muted" style="text-align:center;margin:0">Anónimo · la persona y el responsable del local verán tu nota y tu comentario, nunca quién eres.</p>`;
 }
 
 /* ---------- jefe ---------- */
@@ -521,14 +539,14 @@ async function vJefe(){
     const p=s.profiles||{},v=por[s.id]||[],on=turno.has(s.id),pend=p.photo_pending_url&&p.photo_pending_url!==p.photo_url;
     return `<div>
       <div class="row">${avatar(p.photo_url,p.full_name,on?'on':'')}<div class="col"><b>${esc(p.full_name)}</b>
-        <div class="muted tiny">${esc(s.job_title||p.job_title||'')} · desde ${fechaES(s.started_at)}</div>
+        <div class="muted tiny">${esc(s.job_title||p.job_title||'')}</div>
         <div class="tiny">${v.length?estrellas(media(v))+' <b>'+fmt(media(v))+'</b> <span class="muted">· '+v.length+'</span>':'<span class="muted">Sin valoraciones</span>'}</div></div>
         ${auto?'<span class="chip good">En turno</span>':`<div style="text-align:center"><button class="sw ${on?'on':''}" data-act="turno" data-id="${esc(s.id)}" data-on="${on?1:0}" aria-label="Trabaja hoy" aria-pressed="${on}"><i></i></button><div class="tiny muted" style="margin-top:3px">En turno</div></div>`}</div>
       ${pend?`<div class="card warn" style="margin-top:10px;padding:12px"><div class="row">${okFoto(p.photo_pending_url)?`<img class="ava xl" style="width:64px;height:64px;border-radius:18px" src="${esc(p.photo_pending_url)}" alt="">`:ico('camera',28)}<div class="col"><b>Foto nueva</b><div class="tiny muted">Cara visible, fondo liso.</div></div></div>
         <div class="row" style="margin-top:10px"><button class="btn sm" data-act="foto-ok" data-id="${esc(s.worker_id)}">${ico('check',16)}Aprobar</button><button class="btn sm ghost" data-act="foto-no" data-id="${esc(s.worker_id)}">Pedir otra</button></div></div>`:''}
       <div style="margin-top:10px">${S.form.baja===s.id
         ?`<div class="row"><button class="btn sm crit" data-act="baja-ok" data-id="${esc(s.id)}">Confirmar baja</button><button class="btn sm ghost" data-act="baja-no">Cancelar</button></div><p class="tiny muted" style="margin:8px 0 0">Su historial se lo lleva ${esc((p.full_name||'').split(' ')[0])}.</p>`
-        :`<button class="btn sm ghost" data-act="baja" data-id="${esc(s.id)}">Dar de baja</button>`}</div>
+        :`<button class="quiet" data-act="baja" data-id="${esc(s.id)}">Dar de baja</button>`}</div>
     </div>`}).join(''):vacio('users','Aún no hay equipo. Genera un código y dáselo a tu primera persona.');
 
   const libres=cd.data.filter(x=>!x.used_by),usados=cd.data.length-libres.length;
@@ -543,11 +561,11 @@ async function vJefe(){
   const clasif=st.data.filter(s=>(por[s.id]||[]).length).map(s=>({s,m:media(por[s.id]),n:por[s.id].length})).sort((a,b)=>b.m-a.m||b.n-a.n).slice(0,5);
   const ranking=clasif.length>1?`<div class="card">${sec('users','Tu equipo','<span class="tiny muted">por nota media</span>')}<div class="lista" style="margin-top:6px">${clasif.map((x,i)=>`<div class="rank"><span class="pos">${i+1}</span>${avatar((x.s.profiles||{}).photo_url,(x.s.profiles||{}).full_name)}<div class="col"><b>${esc((x.s.profiles||{}).full_name)}</b><div class="tiny muted">${x.n} valoración${x.n===1?'':'es'}</div></div><div style="text-align:right"><b>${fmt(x.m)}</b><div>${estrellas(x.m)}</div></div></div>`).join('')}</div></div>`:'';
   const pResumen=`${guiaIni}<div class="stats">
-    <div class="stat"><b ${todas.length?`data-count="${media(todas).toFixed(1)}" data-dec="1"`:''}>${todas.length?media(todas).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1}):'—'}</b><span>★ Media</span></div>
-    <div class="stat"><b>${enTurno}<span style="font-size:15px;color:var(--muted);letter-spacing:0;text-transform:none">/${st.data.length}</span></b><span>Hoy</span></div>
-    <div class="stat"><b data-count="${todas.length}">${todas.length}</b><span>Votos</span></div></div>
-  <div class="card">${sec('qr','Conversión de la semana')}<div class="stats" style="margin-top:6px"><div class="stat"><b>${esc7}</b><span>Escaneos</span></div><div class="stat"><b>${val7}</b><span>Valoraciones</span></div><div class="stat"><b>${conv==null?'—':conv+'%'}</b><span>Conversión</span></div></div></div>
-  ${todas.length?`<div class="card">${sec('chart','Esta semana','<span class="tiny muted">valoraciones por día</span>')}<div class="barras">${dias.map(d=>`<div class="bar ${porDia[d]?'':'cero'}"><b>${porDia[d]||''}</b><i style="--h:${porDia[d]/maxD}"></i><em>${'DLMXJVS'[new Date(d+'T12:00:00').getDay()]}</em></div>`).join('')}</div></div>`:''}
+    <div class="stat"><b ${todas.length?`data-count="${media(todas).toFixed(1)}" data-dec="1"`:''}>${todas.length?media(todas).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1}):'—'}</b><span>Nota media</span></div>
+    <div class="stat"><b>${enTurno}<span style="font-size:15px;color:var(--muted);letter-spacing:0;text-transform:none">/${st.data.length}</span></b><span>En turno</span></div>
+    <div class="stat"><b data-count="${todas.length}">${todas.length}</b><span>Opiniones</span></div></div>
+  <div class="card">${sec('qr','Esta semana en tus mesas')}<div class="stats" style="margin-top:6px"><div class="stat"><b>${esc7}</b><span>Escanearon</span></div><div class="stat"><b>${val7}</b><span>Valoraron</span></div><div class="stat"><b>${conv==null?'—':conv+'%'}</b><span>Lo completan</span></div></div></div>
+  ${todas.length?`<div class="card">${sec('chart','Valoraciones por día')}<div class="barras">${dias.map(d=>`<div class="bar ${porDia[d]?'':'cero'}"><b>${porDia[d]||''}</b><i style="--h:${porDia[d]/maxD}"></i><em>${'DLMXJVS'[new Date(d+'T12:00:00').getDay()]}</em></div>`).join('')}</div></div>`:''}
   ${ranking}
   <div class="card">${sec('chat','Últimas valoraciones')}${todas.length?`<div class="lista" style="margin-top:6px">${todas.slice(0,8).map(r=>`<div><div class="row">${avatar((perfil[r.stint_id]||{}).photo_url,nombre[r.stint_id],'sm')}<b class="col">${esc(nombre[r.stint_id])}</b><span>${estrellas(r.stars)}</span></div>${coment(r)}<div class="tiny muted">${fechaES(r.created_at)}</div></div>`).join('')}</div>`:vacio('star','Cuando alguien valore, saldrá aquí')}</div>`;
   const pEquipo=`<div class="card"><div class="row"><div class="col"><h2>Turno automático</h2><p class="tiny muted" style="margin:4px 0 0">${auto?'Todo tu equipo cuenta como en turno cada día.':'Ahora marcas tú cada día quién trabaja. Si lo olvidas, los clientes no podrán valorar.'}</p></div><button class="sw ${auto?'on':''}" data-act="auto-turno" data-on="${auto?1:0}" aria-label="Turno automático" aria-pressed="${auto}"><i></i></button></div></div>
@@ -566,12 +584,12 @@ async function vJefe(){
   const pend=cu.data.filter(x=>!x.used_at),hechos=cu.data.length-pend.length;
   const pPremios=`<div class="card">${sec('star','Premios')}
     <p class="tiny muted" style="margin:0 0 10px">Los clientes con cuenta suman 1 punto por valoración (máximo 3 al día en tu local), sin importar la nota. Sin premios activos no se reparten puntos.</p>
-    <form data-form="premio" class="row" style="align-items:flex-end"><div class="campo col"><label for="pn">Premio</label><input id="pn" name="nombre" required maxlength="60" placeholder="Café gratis"></div><div class="campo" style="width:92px"><label for="pc">Puntos</label><input id="pc" name="coste" type="number" inputmode="numeric" min="1" max="1000" value="10" required></div><button class="btn sm" style="min-height:52px" type="submit">${ico('plus',16)}</button></form>
+    <form data-form="premio" class="row" style="align-items:flex-end;flex-wrap:wrap"><div class="campo" style="flex-basis:100%"><label for="pn">Nombre del premio</label><input id="pn" name="nombre" required maxlength="60" placeholder="Café gratis"></div><div class="campo" style="width:110px"><label for="pc">Puntos</label><input id="pc" name="coste" type="number" inputmode="numeric" min="1" max="1000" value="10" required></div><button class="btn sm" style="min-height:56px;flex:1" type="submit">${ico('plus',16)}Añadir premio</button></form>
     ${rw.data.length?`<div class="lista" style="margin-top:12px">${rw.data.map(x=>`<div class="row" style="${x.active?'':'opacity:.5'}"><div class="col"><b>${esc(x.name)}</b><div class="tiny muted">${x.cost} puntos${x.active?'':' · desactivado'}</div></div><button class="btn sm ghost" data-act="premio-toggle" data-id="${esc(x.id)}" data-on="${x.active?1:0}">${x.active?'Desactivar':'Activar'}</button>${x.active?'':`<button class="btn sm crit" data-act="premio-borrar" data-id="${esc(x.id)}">Borrar</button>`}</div>`).join('')}</div>`:''}</div>
   <div class="card">${sec('key','Cupones')}${pend.length?`<div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">${pend.map(x=>`<div class="cupon"><b>${esc(x.reward_name)}</b><div class="codigo" style="font-size:20px;margin:4px 0 8px">${esc(x.code)}</div><button class="btn sm" data-act="entregar" data-code="${esc(x.code)}">${ico('check',16)}Marcar entregado</button></div>`).join('')}</div>`:vacio('key','Cuando un cliente canjee un premio, su cupón saldrá aquí')}
     ${hechos?`<p class="tiny muted" style="margin:12px 0 0">${hechos} entregado${hechos===1?'':'s'}</p>`:''}</div>`;
   const pCuenta=`${editarLocal(co)}
-  <div class="card">${sec('chat','Datos')}<p class="tiny muted" style="margin:0 0 10px">Descarga las valoraciones de tu equipo para Excel.</p><button class="btn ghost" data-act="csv" ${todas.length?'':'disabled'}>Exportar valoraciones (CSV)</button></div>
+  <div class="card">${sec('chat','Tus datos')}<p class="tiny muted" style="margin:0 0 10px">Descarga las valoraciones de tu equipo para Excel.</p><button class="btn ghost" data-act="csv" ${todas.length?'':'disabled'}>Descargar valoraciones</button></div>
   <button class="btn ghost" data-act="salir">${ico('out',18)}Cerrar sesión</button>
   ${borrar('Se borra tu cuenta. Tu local se queda sin dueño y las valoraciones de tu equipo se conservan en el historial de cada persona.')}${pie()}`;
   return cab+({resumen:pResumen,equipo:pEquipo,mesas:pMesas,premios:pPremios,cuenta:pCuenta})[tab];
@@ -670,6 +688,7 @@ function vClave(){
   return `<h1 class="big m">Nueva contraseña</h1>
   <form data-form="clave"><div class="campo"><label for="p1">Contraseña · mínimo 8</label><input id="p1" name="p1" type="password" required minlength="8" autocomplete="new-password"></div>
   <div class="campo"><label for="p2">Repítela</label><input id="p2" name="p2" type="password" required minlength="8" autocomplete="new-password"></div>
+  <button type="button" class="btn ghost sm" style="align-self:flex-start" data-act="ver-clave">Mostrar contraseña</button>
   <button class="btn" type="submit">Guardar</button></form>`;
 }
 const editarPerfil=pf=>`<div class="card"><h2>Mis datos</h2><form data-form="perfil-ed" style="margin-top:10px">
@@ -742,7 +761,12 @@ function vGuia(){
 }
 
 /* ---------- acciones (botones) ---------- */
+const TAM=[1,1.12,1.25];
+const aplicaTam=()=>{let i=0;try{i=+localStorage.getItem('tippyo_tam')||0}catch(e){}document.documentElement.style.zoom=TAM[i]||1};
+aplicaTam();
 const acts={
+  'ver-clave'(b){const i=[...b.closest('form').querySelectorAll('input[name=password],input[name=p1],input[name=p2]')],on=i[0].type==='password';i.forEach(x=>x.type=on?'text':'password');b.textContent=on?'Ocultar contraseña':'Mostrar contraseña'},
+  tam(){let i=0;try{i=((+localStorage.getItem('tippyo_tam')||0)+1)%TAM.length;localStorage.setItem('tippyo_tam',i)}catch(e){}aplicaTam();flash(i?'Letra más grande':'Letra normal')},
   async salir(){await sb.auth.signOut();S.user=null;S.co=null;location.hash='#/';render()},
   modo(b){S.form.modo=b.dataset.m;render()},
   'cuenta-cliente'(){S.form={modo:'alta'};localStorage.setItem('tippyo_rol','cliente');location.hash='#/entrar/cliente'},
@@ -757,7 +781,7 @@ const acts={
     const r=ruta();
     const {data,error}=await sb.rpc('submit_rating',{p_stint:S.form.sel,p_table:+r[2],p_token:r[3],p_stars:S.form.nota,p_comment:S.form.com||'',p_device:dispositivo()});
     if(error)throw error;
-    const d=data&&typeof data==='object'?data:{};S.form={hecho:true,pts:+d.local||0,tp:+d.tippyo||0};render();
+    const nom=((document.querySelector('.centro h2')||{}).textContent||'').split(' ')[0],d=data&&typeof data==='object'?data:{};S.form={hecho:true,nom,pts:+d.local||0,tp:+d.tippyo||0};render();
   },
   async turno(b){
     const id=b.dataset.id,on=b.dataset.on==='1';
