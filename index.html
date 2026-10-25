@@ -203,6 +203,12 @@ body.has-tabs #flash{bottom:calc(86px + env(safe-area-inset-bottom))}
 .prog{height:6px;border-radius:99px;background:var(--surface3);overflow:hidden}
 .prog i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand),var(--brand-b));transform:scaleX(var(--p));transform-origin:left}
 .enter .prog i{animation:llena .7s var(--ease) .1s both}
+.paso{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);color:inherit;text-decoration:none;transition:transform .14s var(--ease)}
+.paso:last-child{border-bottom:0;padding-bottom:2px}.paso:active{transform:scale(.985)}
+.paso .num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;font-weight:700;font-size:14px;border:1.5px solid var(--brand-b);color:var(--brand-b)}
+.paso.ok .num{background:var(--brand-b);color:#08121a}.paso.ok b{color:var(--muted);font-weight:500;text-decoration:line-through}
+.ava.sm{width:36px;height:36px;border-radius:11px;font-size:14px}
+.rank{display:flex;align-items:center;gap:12px}.rank .pos{width:20px;text-align:center;font-family:var(--d);font-weight:700;color:var(--muted)}
 @keyframes llena{from{transform:scaleX(0)}}
 .cupon{border:1.5px dashed rgba(124,187,223,.55);border-radius:14px;padding:12px;text-align:center}
 .cupon.usado{opacity:.5;border-style:solid;border-color:var(--line)}
@@ -502,7 +508,7 @@ async function vJefe(){
   const {co,st,sh,cd,mm,rt,rw,cu,sc}=D;S.co=co;
   const auto=!!co.auto_shift,turno=new Set(auto?st.data.map(x=>x.id):sh.data.map(x=>x.stint_id)),por={},nombre={};
   rt.data.forEach(r=>(por[r.stint_id]=por[r.stint_id]||[]).push(r));
-  st.data.forEach(s=>{nombre[s.id]=(s.profiles&&s.profiles.full_name)||'—'});
+  const perfil={};st.data.forEach(s=>{nombre[s.id]=(s.profiles&&s.profiles.full_name)||'—';perfil[s.id]=s.profiles||{}});
   const mesas=mm.data,sel=(S.form.mesa&&mesas.find(m=>m.table_no===+S.form.mesa))||mesas[0];
   const url=sel?`${BASE}#/m/${co.id}/${sel.table_no}/${sel.token}`:'';
   const nuevo=S.nuevo;S.mesas=mesas;S.sinTurno=st.data.filter(s=>!turno.has(s.id)).map(s=>s.id);
@@ -532,13 +538,18 @@ async function vJefe(){
   const tab=(JT.find(x=>x[0]===ruta()[1])||JT[0])[0];S.tabs={base:'jefe',items:JT,actual:tab};
   const cab=`<div><div class="k">${esc(co.city)}</div><h1 class="big m">${esc(co.name)}</h1></div>`;
   const val7=todas.filter(r=>fdia(r.created_at)>=dias[0]).length,esc7=sc.data.length,conv=esc7?Math.min(100,Math.round(100*val7/esc7)):null;
-  const pResumen=`<div class="stats">
+  const pasos=[[mesas.length>0,'Crea tus mesas','mesas'],[st.data.length>0,'Da de alta a tu primera persona','equipo'],[todas.length>0,'Imprime los QR y consigue la primera valoración','mesas']],hechosP=pasos.filter(x=>x[0]).length;
+  const guiaIni=hechosP<3?`<div class="card">${sec('check','Primeros pasos',`<span class="tiny muted">${hechosP} de 3</span>`)}<div class="prog" style="margin:10px 0 4px"><i style="--p:${hechosP/3}"></i></div><div class="lista">${pasos.map((x,i)=>`<a class="paso ${x[0]?'ok':''}" href="#/jefe/${x[2]}"><span class="num">${x[0]?ico('check',16):i+1}</span><b class="col">${x[1]}</b>${x[0]?'':ico('go',18)}</a>`).join('')}</div></div>`:'';
+  const clasif=st.data.filter(s=>(por[s.id]||[]).length).map(s=>({s,m:media(por[s.id]),n:por[s.id].length})).sort((a,b)=>b.m-a.m||b.n-a.n).slice(0,5);
+  const ranking=clasif.length>1?`<div class="card">${sec('users','Tu equipo','<span class="tiny muted">por nota media</span>')}<div class="lista" style="margin-top:6px">${clasif.map((x,i)=>`<div class="rank"><span class="pos">${i+1}</span>${avatar((x.s.profiles||{}).photo_url,(x.s.profiles||{}).full_name)}<div class="col"><b>${esc((x.s.profiles||{}).full_name)}</b><div class="tiny muted">${x.n} valoración${x.n===1?'':'es'}</div></div><div style="text-align:right"><b>${fmt(x.m)}</b><div>${estrellas(x.m)}</div></div></div>`).join('')}</div></div>`:'';
+  const pResumen=`${guiaIni}<div class="stats">
     <div class="stat"><b ${todas.length?`data-count="${media(todas).toFixed(1)}" data-dec="1"`:''}>${todas.length?media(todas).toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1}):'—'}</b><span>★ Media</span></div>
     <div class="stat"><b>${enTurno}<span style="font-size:15px;color:var(--muted);letter-spacing:0;text-transform:none">/${st.data.length}</span></b><span>Hoy</span></div>
     <div class="stat"><b data-count="${todas.length}">${todas.length}</b><span>Votos</span></div></div>
   <div class="card">${sec('qr','Conversión de la semana')}<div class="stats" style="margin-top:6px"><div class="stat"><b>${esc7}</b><span>Escaneos</span></div><div class="stat"><b>${val7}</b><span>Valoraciones</span></div><div class="stat"><b>${conv==null?'—':conv+'%'}</b><span>Conversión</span></div></div></div>
   ${todas.length?`<div class="card">${sec('chart','Esta semana','<span class="tiny muted">valoraciones por día</span>')}<div class="barras">${dias.map(d=>`<div class="bar ${porDia[d]?'':'cero'}"><b>${porDia[d]||''}</b><i style="--h:${porDia[d]/maxD}"></i><em>${'DLMXJVS'[new Date(d+'T12:00:00').getDay()]}</em></div>`).join('')}</div></div>`:''}
-  <div class="card">${sec('chat','Últimas valoraciones')}${todas.length?`<div class="lista" style="margin-top:6px">${todas.slice(0,8).map(r=>`<div><div class="row"><b class="col">${esc(nombre[r.stint_id])}</b><span>${estrellas(r.stars)}</span></div>${coment(r)}<div class="tiny muted">${fechaES(r.created_at)}</div></div>`).join('')}</div>`:vacio('star','Cuando alguien valore, saldrá aquí')}</div>`;
+  ${ranking}
+  <div class="card">${sec('chat','Últimas valoraciones')}${todas.length?`<div class="lista" style="margin-top:6px">${todas.slice(0,8).map(r=>`<div><div class="row">${avatar((perfil[r.stint_id]||{}).photo_url,nombre[r.stint_id],'sm')}<b class="col">${esc(nombre[r.stint_id])}</b><span>${estrellas(r.stars)}</span></div>${coment(r)}<div class="tiny muted">${fechaES(r.created_at)}</div></div>`).join('')}</div>`:vacio('star','Cuando alguien valore, saldrá aquí')}</div>`;
   const pEquipo=`<div class="card"><div class="row"><div class="col"><h2>Turno automático</h2><p class="tiny muted" style="margin:4px 0 0">${auto?'Todo tu equipo cuenta como en turno cada día.':'Ahora marcas tú cada día quién trabaja. Si lo olvidas, los clientes no podrán valorar.'}</p></div><button class="sw ${auto?'on':''}" data-act="auto-turno" data-on="${auto?1:0}" aria-label="Turno automático" aria-pressed="${auto}"><i></i></button></div></div>
   <div class="card">${sec('users','Equipo',S.sinTurno.length>1?'<button class="btn sm ghost" data-act="todos-hoy">Todos hoy</button>':'')}<div class="lista" style="margin-top:6px">${equipo}</div></div>
   <div class="card">${sec('key','Códigos','<button class="btn sm gold" data-act="gen-codigo">'+ico('plus',16)+'Nuevo</button>')}
