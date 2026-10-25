@@ -119,10 +119,11 @@ h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
 .logo span{display:block}
 
 /* botones */
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;padding:0 18px;border-radius:14px;background:var(--brand);color:#fff;font-size:17px;font-weight:600;text-decoration:none;
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:54px;padding:0 18px;border-radius:14px;background:var(--brand-b);color:var(--on-gold);font-size:17px;font-weight:600;text-decoration:none;
   transition:transform .14s var(--ease),opacity .2s,filter .2s}
 .btn:active{transform:scale(.97)}
 .btn.gold{background:var(--brand-b);color:var(--on-gold)}
+.btn.sm.ghost,.btn.ghost{color:var(--text2)}
 .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text2)}
 .btn.sm{min-height:46px;font-size:15.5px;border-radius:12px;width:auto;padding:0 14px}
 .btn.crit{background:transparent;border:1px solid rgba(229,88,79,.55);color:var(--crit-t)}
@@ -226,7 +227,11 @@ button.fila{width:100%;text-align:left;display:flex;align-items:center;gap:12px}
 .vacio .ic{color:var(--faint)}
 .qrbox{background:#fff;color:#0d1418;border-radius:18px;padding:20px;text-align:center}
 .qrbox canvas{max-width:100%;height:auto;margin:10px auto 0;display:block}
-.qrbox .n{font-family:var(--d);font-weight:800;font-size:19px}
+.qrbox .h{font-family:var(--d);font-weight:800;font-size:23px;line-height:1.15;color:#0d1418}
+.qrbox .n{font-weight:600;font-size:16px;color:#5a6b76;margin-top:2px}
+.qrbox .p{font-size:15px;color:#243540;margin-top:12px;line-height:1.7}.qrbox .p b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#0d1418;color:#fff;font-size:13px}
+.qrbox .m{font-family:var(--m);font-weight:600;font-size:16px;margin-top:8px}
+.qrbox .f{font-size:12.5px;color:#6a7b86;margin-top:6px}
 .rep{font-size:14px;color:var(--muted);text-decoration:underline;padding:8px 6px;margin:-8px -2px}
 .doc h2{margin:14px 0 4px}.doc p,.doc li{color:var(--text2);font-size:16.5px;margin:0 0 6px}.doc ul{padding-left:18px;margin:0}
 .linea-firma{border-bottom:1px solid var(--faint);height:30px;margin:6px 0 2px}
@@ -283,7 +288,9 @@ body.has-tabs #flash{bottom:calc(86px + env(safe-area-inset-bottom))}
   body.todas .wrap>*:not(.hoja){display:none!important}
   body.todas .hoja{display:grid!important;grid-template-columns:1fr 1fr;gap:8mm}
   .pegatina{break-inside:avoid;border:1px dashed #999;padding:8mm 6mm;text-align:center;color:#000;background:#fff}
-  .pegatina .n{font:800 15pt Archivo,Arial,sans-serif}.pegatina .t{font:10pt Arial,sans-serif;color:#444}.pegatina .m{font:600 13pt 'IBM Plex Mono',monospace;margin-top:2mm}
+  .pegatina .h{font:800 18pt Archivo,Arial,sans-serif}.pegatina .n{font:600 11pt Arial,sans-serif;color:#444;margin-top:1mm}
+  .pegatina .p{font:10.5pt Arial,sans-serif;margin-top:3mm;line-height:1.8}.pegatina .p b{display:inline-block;width:5mm;height:5mm;line-height:5mm;border-radius:50%;background:#000;color:#fff;font-size:9pt}
+  .pegatina .m{font:600 13pt 'IBM Plex Mono',monospace;margin-top:2mm}.pegatina .f{font:8pt Arial,sans-serif;color:#666;margin-top:2mm}
   .pegatina canvas{width:58mm;height:58mm;margin:3mm auto 0;display:block;image-rendering:pixelated}
   .imprimible,.imprimible *{color:#111!important;background:transparent!important;border-color:#bbb!important;box-shadow:none!important;animation:none!important}
   .imprimible .st i{color:#ccc!important}.imprimible .st i.on{color:#d9a02a!important}.imprimible .ring .f{stroke:#d9a02a!important}.imprimible .ring circle:first-child{stroke:#ddd!important}
@@ -383,7 +390,7 @@ const errTxt=e=>{
   if(/has_team/.test(m))return 'Antes de borrar tu cuenta, da de baja a todo tu equipo.';
   if(/rate limit/i.test(m))return 'Demasiados intentos. Espera unos minutos y vuelve a probar.';
   if(/Failed to fetch|NetworkError/i.test(m))return 'No hay conexión con el servidor. Comprueba tu internet.';
-  return m;
+  return /^[A-ZÁÉÍÓÚ¿¡][^_]*\.$/.test(m)&&/\b(el|la|de|no|que|una|tu|en)\b/i.test(m)?m:'Algo no ha ido bien. Inténtalo otra vez en un momento.';
 };
 const flash=(text,tipo='ok')=>{S.msg={text,tipo};pintaFlash();clearTimeout(flashT);flashT=setTimeout(()=>{S.msg=null;pintaFlash()},4500)};
 const flashHtml=()=>S.msg?`<div class="flash ${S.msg.tipo}" role="status">${ico(S.msg.tipo==='ok'?'check':'lock',18)}<span>${esc(S.msg.text)}</span></div>`:'';
@@ -604,12 +611,13 @@ async function vJefe(){
   const pEquipo=`<div class="card"><div class="row"><div class="col"><h2>Turno automático</h2><p class="tiny muted" style="margin:4px 0 0">${auto?'Todo tu equipo cuenta como en turno cada día.':'Ahora marcas tú cada día quién trabaja. Si lo olvidas, los clientes no podrán valorar.'}</p></div><button class="sw ${auto?'on':''}" data-act="auto-turno" data-on="${auto?1:0}" aria-label="Turno automático" aria-pressed="${auto}"><i></i></button></div></div>
   <div class="card">${sec('users','Equipo',S.sinTurno.length>1?'<button class="btn sm ghost" data-act="todos-hoy">Todos hoy</button>':'')}<div class="lista" style="margin-top:6px">${equipo}</div></div>
   <div class="card">${sec('key','Códigos','<button class="btn sm gold" data-act="gen-codigo">'+ico('plus',16)+'Nuevo</button>')}
+    <p class="tiny muted" style="margin:0">Cada persona de tu equipo se da de alta con un código de un solo uso.</p>
     ${libres.length?`<div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">${libres.map(x=>`<button class="cod ${nuevo===x.code?'nuevo':''}" data-act="copiar" data-v="${esc(x.code)}" aria-label="Copiar ${esc(x.code)}"><div class="codigo">${esc(x.code)}</div><div class="tiny muted" style="display:flex;gap:6px;justify-content:center;align-items:center">${ico('copy',14)}Toca para copiar · 1 uso</div></button>`).join('')}</div>`:vacio('key','Pulsa Nuevo para crear un código')}
     ${usados?`<p class="tiny muted" style="margin:12px 0 0">${usados} usado${usados===1?'':'s'}</p>`:''}</div>`;
   const pMesas=`<div class="card">${sec('qr','Mesas y QR')}
     <form data-form="mesas" class="row" style="align-items:flex-end;margin-top:6px"><div class="campo col"><label for="nmesas">Nº de mesas</label><input id="nmesas" name="n" type="number" inputmode="numeric" min="1" max="60" value="${mesas.length||8}" required></div><button class="btn sm" style="min-height:52px" type="submit">${mesas.length?'Ampliar':'Crear'}</button></form>
     ${sel?`<div class="campo" style="margin-top:14px"><label for="selm">Mesa</label><select id="selm" data-change="mesa">${mesas.map(m=>`<option value="${m.table_no}" ${m.table_no===sel.table_no?'selected':''}>Mesa ${m.table_no}</option>`).join('')}</select></div>
-    <div class="qrbox qrprint" style="margin-top:14px"><div class="n">${esc(co.name)}</div><div class="tiny" style="color:#5a6b76">Escanea y valora a quien te atiende</div><canvas data-qr="${esc(url)}" aria-label="QR de la mesa ${sel.table_no}"></canvas><div class="mono tiny" style="margin-top:8px">MESA ${sel.table_no}</div></div>
+    <div class="qrbox qrprint" style="margin-top:14px"><div class="h">Valora a quien te atiende</div><div class="n">${esc(co.name)}</div><canvas data-qr="${esc(url)}" aria-label="QR de la mesa ${sel.table_no}"></canvas><div class="p">${PASOS}</div><div class="m">MESA ${sel.table_no}</div><div class="f">Sin instalar nada · anónimo · ★ Tippyo</div></div>
     <div class="row" style="margin-top:12px"><button class="btn ghost sm" style="flex:1" data-act="imprimir">${ico('print',16)}Esta mesa</button><button class="btn sm" style="flex:1" data-act="imprimir-todas">${ico('print',16)}Todas (${mesas.length})</button></div>
     ${S.form.rotar===sel.table_no
       ?`<div class="card warn" style="margin-top:12px;padding:12px"><p class="tiny" style="margin:0 0 10px">El QR actual de la mesa ${sel.table_no} dejará de funcionar. Tendrás que imprimir y pegar el nuevo.</p><div class="row"><button class="btn sm crit" data-act="rotar-ok" data-n="${sel.table_no}">Renovar</button><button class="btn sm ghost" data-act="rotar-no">Cancelar</button></div></div>`
@@ -635,7 +643,7 @@ function vPerfilNuevo(){
   <form data-form="perfil">
     <div class="campo"><label for="fn">Nombre y apellido</label><input id="fn" name="nombre" required maxlength="60" autocomplete="name" data-keep="nombre" value="${esc(S.form.nombre||'')}"></div>
     <div class="campo"><label for="pu">Puesto</label><select id="pu" name="puesto">${PUESTOS.map(p=>`<option>${esc(p)}</option>`).join('')}</select></div>
-    <div class="campo"><label for="fo">Foto formal · cara visible, fondo liso</label><input id="fo" name="foto" type="file" accept="image/*" required></div>
+    <div class="campo"><label for="fo">Tu foto</label><input id="fo" name="foto" type="file" accept="image/*" required><p class="tiny muted" style="margin:6px 0 0">Los clientes la verán para saber a quién valoran. Cara visible y fondo liso. Tu jefe la aprobará antes.</p></div>
     <button class="btn" type="submit">Crear perfil</button>
   </form>`;
 }
@@ -736,6 +744,7 @@ const editarLocal=co=>`<div class="card"><h2>Datos del local</h2><form data-form
 
 /* ---------- certificado, privacidad, consentimiento ---------- */
 const RESPONSABLE='Lucas Parrilla · luparhu@gmail.com';
+const PASOS=['Escanea','Elige','Valora'].map((t,i)=>`<span style="white-space:nowrap"><b>${i+1}</b> ${t}</span>`).join(' &nbsp; ');
 const pie=()=>`<div class="pie"><a href="#/ajustes">Ajustes</a><a href="#/privacidad">Privacidad</a><a href="#/consentimiento">Consentimiento</a><a href="#/guia">Guía del piloto</a><span>Versión de piloto</span></div>`;
 const coment=r=>r.comment?`<div class="muted">“${esc(r.comment)}” <button class="rep" data-act="denunciar" data-id="${esc(r.id)}">Denunciar</button></div>`:'';
 const borrar=txt=>S.form.borrar
@@ -909,7 +918,7 @@ const acts={
   'imprimir-todas'(){
     const base=`${BASE}#/m/${S.co.id}/`,h=document.createElement('div');
     h.className='hoja';
-    h.innerHTML=S.mesas.map(m=>`<div class="pegatina"><div class="n">${esc(S.co.name)}</div><div class="t">Escanea y valora a quien te atiende</div><canvas data-qr="${esc(base+m.table_no+'/'+m.token)}"></canvas><div class="m">MESA ${m.table_no}</div></div>`).join('');
+    h.innerHTML=S.mesas.map(m=>`<div class="pegatina"><div class="h">Valora a quien te atiende</div><div class="n">${esc(S.co.name)}</div><canvas data-qr="${esc(base+m.table_no+'/'+m.token)}"></canvas><div class="p">${PASOS}</div><div class="m">MESA ${m.table_no}</div><div class="f">Sin instalar nada · anónimo · ★ Tippyo</div></div>`).join('');
     document.querySelector('.wrap').appendChild(h);dibujaQR();document.body.classList.add('todas');
     const fin=()=>{document.body.classList.remove('todas');h.remove();removeEventListener('afterprint',fin)};
     addEventListener('afterprint',fin);print();
