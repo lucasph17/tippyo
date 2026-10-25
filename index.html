@@ -3,9 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1116">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f8fb">
+<meta name="theme-color" content="#0b1116">
 <meta name="color-scheme" content="dark light">
+<script>
+/* Ajustes de aspecto: se aplican antes de pintar para que no haya parpadeo. Se guardan solo en este móvil. */
+(function(){var D={tam:0,tema:'auto',paleta:'azul',contraste:false,anim:true},Z=[1,1.12,1.25],mq=matchMedia('(prefers-color-scheme: light)');
+function ler(){try{return Object.assign({},D,JSON.parse(localStorage.getItem('tippyo_aj')||'{}'))}catch(e){return Object.assign({},D)}}
+function aplicar(a){var h=document.documentElement,claro=a.tema==='claro'||(a.tema==='auto'&&mq.matches);
+h.classList.toggle('claro',claro);h.classList.toggle('contraste',!!a.contraste);h.classList.toggle('sinanim',!a.anim);h.dataset.paleta=a.paleta;h.style.zoom=Z[a.tam]||1;
+var m=document.querySelector('meta[name=theme-color]');if(m)m.content=claro?'#f4f8fb':'#0b1116';
+var c=document.querySelector('meta[name=color-scheme]');if(c)c.content=claro?'light':'dark'}
+window.AJ={ler:ler,D:D,guardar:function(p){var a=Object.assign(ler(),p);try{localStorage.setItem('tippyo_aj',JSON.stringify(a))}catch(e){}aplicar(a);return a},
+reset:function(){try{localStorage.removeItem('tippyo_aj')}catch(e){}aplicar(D)}};
+aplicar(ler());if(mq.addEventListener)mq.addEventListener('change',function(){aplicar(ler())});
+})();
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -28,23 +40,35 @@
   --ease:cubic-bezier(.23,1,.32,1);
   --bar:rgba(8,11,14,.78); --flash:rgba(24,32,40,.97); --on-gold:#06121a; --good-t:#6fe08f; --crit-t:#ee8a82; --strong:#fff;
 }
-/* Tema claro automático: se activa solo si el móvil está en modo claro (mejor a pleno sol y para vista cansada). */
-@media (prefers-color-scheme:light){:root{
+/* Paletas de color (modo oscuro) */
+:root{--acc:124 187 223;--acc2:78 127 156}
+:root[data-paleta=verde]{--brand:#377a56;--brand-b:#7bd0a0;--acc:123 208 160;--acc2:55 122 86}
+:root[data-paleta=violeta]{--brand:#7a62b3;--brand-b:#b9a8f0;--acc:185 168 240;--acc2:122 98 179}
+:root[data-paleta=naranja]{--brand:#b8672b;--brand-b:#f2ac72;--acc:242 172 114;--acc2:184 103 43}
+:root[data-paleta=rosa]{--brand:#b04a73;--brand-b:#f2a3c1;--acc:242 163 193;--acc2:176 74 115}
+/* Tema claro: se activa con la clase .claro (la pone el ajuste «Automático», «Claro» u «Oscuro») */
+:root.claro{
   --ink:#f4f8fb; --surface:#ffffff; --surface2:#eef3f7; --surface3:#dbe5ed; --line:#d0dce6;
-  --brand:#2f6a8a; --brand-b:#1f5f84; --gold:#e0a100; --gold-d:#b98200;
+  --brand:#2f6a8a; --brand-b:#1f5f84; --acc:31 95 132; --acc2:47 106 138; --gold:#e0a100; --gold-d:#b98200;
   --text:#0f1b24; --text2:#3a4b58; --muted:#566874; --faint:#788a96;
   --good:#1f9d49; --warn:#a86a00; --crit:#c8372d;
   --bar:rgba(244,248,251,.85); --flash:rgba(255,255,255,.98); --on-gold:#fff; --good-t:#177a39; --crit-t:#b02a21; --strong:#0f1b24;
 }
-body::before{background:radial-gradient(60% 70% at 50% 0%,rgba(47,106,138,.12),transparent 75%)}
-.card,.tile,.stat,.pick,.seg{box-shadow:0 1px 2px rgba(15,27,36,.05)}
-.flash{box-shadow:0 14px 40px -10px rgba(15,27,36,.28)}
-}
+:root.claro[data-paleta=verde]{--brand:#2a7a4f;--brand-b:#1e6b43;--acc:30 107 67;--acc2:42 122 79}
+:root.claro[data-paleta=violeta]{--brand:#6246a3;--brand-b:#553a96;--acc:85 58 150;--acc2:98 70 163}
+:root.claro[data-paleta=naranja]{--brand:#a85a1f;--brand-b:#964f19;--acc:150 79 25;--acc2:168 90 31}
+:root.claro[data-paleta=rosa]{--brand:#a03a65;--brand-b:#8f2f58;--acc:143 47 88;--acc2:160 58 101}
+:root.claro body::before{background:radial-gradient(60% 70% at 50% 0%,rgb(var(--acc) / .12),transparent 75%)}
+:root.claro .card,:root.claro .tile,:root.claro .stat,:root.claro .pick,:root.claro .seg{box-shadow:0 1px 2px rgba(15,27,36,.05)}
+:root.claro .flash{box-shadow:0 14px 40px -10px rgba(15,27,36,.28)}
+/* Alto contraste */
+:root.contraste{--text:#fff;--text2:#e6eef3;--muted:#c5d1da;--faint:#a3b0ba;--line:#56677a;--surface3:#2c3a47}
+:root.claro.contraste{--text:#000;--text2:#17242e;--muted:#2f4050;--faint:#4f6070;--line:#7b8e9c;--surface3:#c9d6e0}
 *{box-sizing:border-box}
 html{background:var(--ink);-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;overscroll-behavior-y:none}
 body{margin:0;min-height:100dvh;background:var(--ink);color:var(--text);font-family:var(--b);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased}
 /* luz de fondo que respira, solo decorativa */
-body::before{content:"";position:fixed;inset:0 0 auto 0;height:50dvh;z-index:-1;pointer-events:none;background:radial-gradient(60% 70% at 50% 0%,rgba(78,127,156,.20),transparent 75%)}
+body::before{content:"";position:fixed;inset:0 0 auto 0;height:50dvh;z-index:-1;pointer-events:none;background:radial-gradient(60% 70% at 50% 0%,rgb(var(--acc2) / .20),transparent 75%)}
 h1,h2,h3{font-family:var(--d);margin:0;text-wrap:balance}
 a{color:var(--brand-b)}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -80,7 +104,7 @@ h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:block;text-decoration:none;color:inherit}
 .card.ok{border-color:rgba(47,191,91,.45)}.card.warn{border-color:rgba(250,178,25,.45)}
 .sec{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.sec .bub{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:rgba(124,187,223,.12);color:var(--brand-b)}
+.sec .bub{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:rgb(var(--acc) / .12);color:var(--brand-b)}
 .sec h2{flex:1}
 .tile{display:flex;align-items:center;gap:14px;padding:16px;border-radius:16px;background:var(--surface);border:1px solid var(--line);text-decoration:none;color:inherit;
   transition:transform .16s var(--ease),border-color .16s}
@@ -89,7 +113,7 @@ h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
 .tile b{font-family:var(--d);font-size:21px;letter-spacing:-.01em;display:block}
 .tile span.s{color:var(--muted);font-size:15.5px}
 .tile .go{margin-left:auto;color:var(--faint);transition:transform .2s var(--ease)}
-.b1,.b2,.b3{background:rgba(124,187,223,.12);color:var(--brand-b)!important;border:1px solid rgba(124,187,223,.22)}
+.b1,.b2,.b3{background:rgb(var(--acc) / .12);color:var(--brand-b)!important;border:1px solid rgb(var(--acc) / .22)}
 .hero{display:flex;flex-direction:column;align-items:flex-start;gap:14px;padding-top:6px}
 .logo{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:28px;color:#fff;background:linear-gradient(140deg,var(--brand-b),var(--brand))}
 .logo span{display:block}
@@ -128,14 +152,14 @@ h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
 .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .chip{display:inline-flex;align-items:center;padding:8px 14px;border-radius:99px;font-size:15px;font-weight:600;border:1px solid var(--line);color:var(--muted);background:transparent;transition:transform .14s var(--ease),background .2s,color .2s,border-color .2s}
 button.chip:active{transform:scale(.94)}
-.chip.on{background:rgba(124,187,223,.14);border-color:rgba(124,187,223,.6);color:var(--brand-b)}
+.chip.on{background:rgb(var(--acc) / .14);border-color:rgb(var(--acc) / .6);color:var(--brand-b)}
 .chip.good{color:var(--good-t);border-color:rgba(47,191,91,.5)}.chip.warn{color:var(--warn);border-color:rgba(250,178,25,.5)}
 
 /* formularios */
 .campo{display:flex;flex-direction:column;gap:6px}
 .campo label{font-size:15px;color:var(--text2);font-weight:600}
 .campo input,.campo select,.campo textarea{width:100%;min-height:56px;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px 14px;transition:border-color .2s,box-shadow .2s}
-.campo input:focus,.campo select:focus,.campo textarea:focus{outline:0;border-color:var(--brand-b);box-shadow:0 0 0 4px rgba(124,187,223,.14)}
+.campo input:focus,.campo select:focus,.campo textarea:focus{outline:0;border-color:var(--brand-b);box-shadow:0 0 0 4px rgb(var(--acc) / .14)}
 .campo textarea{resize:none;min-height:70px}
 form{display:flex;flex-direction:column;gap:14px}
 input[type=file]{padding:8px!important;color:var(--muted);font-size:14px}
@@ -150,10 +174,10 @@ input[type=file]::file-selector-button{border:0;border-radius:10px;background:va
 
 /* códigos, interruptores */
 .codigo{font-family:var(--m);font-size:24px;font-weight:600;letter-spacing:.18em;color:var(--brand-b)}
-.cod{width:100%;text-align:center;padding:14px;border-radius:16px;border:1.5px dashed rgba(124,187,223,.55);background:rgba(124,187,223,.05);transition:transform .14s var(--ease),background .2s}
+.cod{width:100%;text-align:center;padding:14px;border-radius:16px;border:1.5px dashed rgb(var(--acc) / .55);background:rgb(var(--acc) / .05);transition:transform .14s var(--ease),background .2s}
 .cod:active{transform:scale(.98)}
 .cod.nuevo{animation:nuevo 1.1s var(--ease) both}
-@keyframes nuevo{0%{transform:translateY(6px);opacity:0}40%{background:rgba(124,187,223,.2)}100%{transform:none;opacity:1}}
+@keyframes nuevo{0%{transform:translateY(6px);opacity:0}40%{background:rgb(var(--acc) / .2)}100%{transform:none;opacity:1}}
 .sw{width:54px;height:32px;border-radius:99px;background:var(--surface3);border:1px solid var(--line);position:relative;flex:0 0 auto;transition:background .2s,border-color .2s}
 .sw i{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:99px;background:var(--muted);transition:transform .22s var(--ease),background .2s}
 .sw.on{background:rgba(47,191,91,.28);border-color:var(--good)}.sw.on i{transform:translateX(22px);background:var(--good)}
@@ -191,7 +215,7 @@ button.fila{width:100%;text-align:left;display:flex;align-items:center;gap:12px}
 .ring .f{stroke:var(--gold);stroke-dasharray:var(--c);animation:anillo .9s var(--ease) .12s both}
 @keyframes anillo{from{stroke-dashoffset:var(--c)}}
 .ring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--d);font-size:21px;font-weight:800}
-.perfil{background:linear-gradient(160deg,rgba(78,127,156,.35),var(--surface) 60%);border:1px solid var(--line);border-radius:24px;padding:18px}
+.perfil{background:linear-gradient(160deg,rgb(var(--acc2) / .35),var(--surface) 60%);border:1px solid var(--line);border-radius:24px;padding:18px}
 .lista>.linea{border-bottom:0;padding:2px 0 20px 22px}.lista>.linea:last-child{padding-bottom:2px}
 .linea{position:relative}
 .linea::before{content:"";position:absolute;left:5px;top:10px;bottom:-6px;width:2px;background:var(--line)}
@@ -221,11 +245,17 @@ body.has-tabs #flash{bottom:calc(86px + env(safe-area-inset-bottom))}
 .paso:last-child{border-bottom:0;padding-bottom:2px}.paso:active{transform:scale(.985)}
 .paso .num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;font-weight:700;font-size:14px;border:1.5px solid var(--brand-b);color:var(--brand-b)}
 .paso.ok .num{background:var(--brand-b);color:var(--on-gold)}.paso.ok b{color:var(--muted);font-weight:500;text-decoration:line-through}
+.paleta{display:flex;flex-wrap:wrap;gap:6px 4px;justify-content:space-between}
+.pal{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 2px;min-width:56px;border-radius:14px;color:var(--text2);font-size:14.5px;font-weight:600}
+.pal i{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;box-shadow:0 0 0 3px var(--surface),0 0 0 5px transparent;transition:box-shadow .2s,transform .14s var(--ease)}
+.pal.on i{box-shadow:0 0 0 3px var(--surface),0 0 0 5.5px var(--text)}.pal:active i{transform:scale(.92)}
+.seg .aa{display:block;font-family:var(--d);font-weight:800;line-height:1.1;margin-bottom:2px}
+.seg button{padding:6px 4px}
 .quiet{color:var(--muted);text-decoration:underline;font-size:15px;min-height:44px;padding:0 4px}
 .ava.sm{width:36px;height:36px;border-radius:11px;font-size:14px}
 .rank{display:flex;align-items:center;gap:12px}.rank .pos{width:20px;text-align:center;font-family:var(--d);font-weight:700;color:var(--muted)}
 @keyframes llena{from{transform:scaleX(0)}}
-.cupon{border:1.5px dashed rgba(124,187,223,.55);border-radius:14px;padding:12px;text-align:center}
+.cupon{border:1.5px dashed rgb(var(--acc) / .55);border-radius:14px;padding:12px;text-align:center}
 .cupon.usado{opacity:.5;border-style:solid;border-color:var(--line)}
 .caras{display:flex;padding-left:14px}
 .caras img{width:62px;height:62px;border-radius:19px;border:3px solid var(--ink);margin-left:-14px;animation:flota 4.2s ease-in-out infinite;box-shadow:0 8px 20px rgba(0,0,0,.35)}
@@ -244,6 +274,7 @@ body.has-tabs #flash{bottom:calc(86px + env(safe-area-inset-bottom))}
 @keyframes aparece{to{opacity:1}}@keyframes brillo{to{background-position:-300% 0}}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+:root.sinanim *,:root.sinanim *::before,:root.sinanim *::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 @media print{
   body,html{background:#fff} body::before{display:none} .top,#flash,.vista,.wrap>*:not(.qrprint):not(.imprimible):not(.hoja){display:none!important}
   .wrap{padding:0;max-width:none} .qrprint,.imprimible{display:block!important;border:0!important}
@@ -317,6 +348,7 @@ const IC={
   star:'<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z"/>',
   chat:'<path d="M4 5h16v11H9l-5 4z"/>',
   check:'<path d="M5 12.5l4.5 4.5L19 7"/>',
+  ajustes:'<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
   aa:'<path d="M3 19l5-13 5 13M5 14h6M15 19l3.2-8 3.2 8M16.3 16.8h3.8"/>',
   copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
@@ -378,7 +410,7 @@ async function subirFoto(file){
 
 /* ---------- marco y rutas ---------- */
 const ruta=()=>location.hash.replace(/^#\/?/,'').split('/').filter(Boolean).map(decodeURIComponent);
-const marco=(html,entra)=>`<div class="top"><a class="marca" href="#/"><i>★</i>${esc(MARCA.toUpperCase())}</a><div class="quien">${S.user?`<span>${esc(S.user.email)}</span>`:''}<button class="icbtn" data-act="tam" aria-label="Cambiar el tamaño de la letra">${ico('aa',21)}</button>${S.user?`<button class="icbtn" data-act="salir" aria-label="Salir">${ico('out',19)}</button>`:''}</div></div><main class="wrap${entra?' enter':''}"><div id="flash">${flashHtml()}</div>${html}</main>${navTabs()}${PREVIEW?'<div class="vista">VISTA PREVIA</div>':''}`;
+const marco=(html,entra)=>`<div class="top"><a class="marca" href="#/"><i>★</i>${esc(MARCA.toUpperCase())}</a><div class="quien"><button class="icbtn" data-act="tam" aria-label="Cambiar el tamaño de la letra">${ico('aa',21)}</button><a class="icbtn" href="#/ajustes" aria-label="Ajustes">${ico('ajustes',21)}</a>${S.user?`<button class="icbtn" data-act="salir" aria-label="Salir">${ico('out',19)}</button>`:''}</div></div><main class="wrap${entra?' enter':''}"><div id="flash">${flashHtml()}</div>${html}</main>${navTabs()}${PREVIEW?'<div class="vista">VISTA PREVIA</div>':''}`;
 const navTabs=()=>{const t=S.tabs;if(!t||t.base!==ruta()[0]||!S.user)return '';
   return `<nav class="tabs" aria-label="Secciones"><div class="tabs-in">${t.items.map(([k,n,i])=>`<a href="#/${t.base}/${k}" class="${t.actual===k?'on':''}" ${t.actual===k?'aria-current="page"':''}>${ico(i,22)}<span>${n}</span></a>`).join('')}</div></nav>`};
 const esqueleto='<div class="sk" style="height:110px"></div><div class="sk"></div><div class="sk" style="height:150px"></div>';
@@ -397,6 +429,7 @@ async function render(){
     else if(r[0]==='tarjeta')html=await guard('cliente',vTarjeta);
     else if(r[0]==='c')html=await vCertificado(r[1]);
     else if(r[0]==='nueva-clave')html=vClave();
+    else if(r[0]==='ajustes')html=vAjustes();
     else if(r[0]==='privacidad')html=vPrivacidad();
     else if(r[0]==='guia')html=vGuia();
     else if(r[0]==='consentimiento')html=vConsentimiento();
@@ -703,7 +736,7 @@ const editarLocal=co=>`<div class="card"><h2>Datos del local</h2><form data-form
 
 /* ---------- certificado, privacidad, consentimiento ---------- */
 const RESPONSABLE='Lucas Parrilla · luparhu@gmail.com';
-const pie=()=>`<div class="pie"><a href="#/privacidad">Privacidad</a><a href="#/consentimiento">Consentimiento</a><a href="#/guia">Guía del piloto</a><span>Versión de piloto</span></div>`;
+const pie=()=>`<div class="pie"><a href="#/ajustes">Ajustes</a><a href="#/privacidad">Privacidad</a><a href="#/consentimiento">Consentimiento</a><a href="#/guia">Guía del piloto</a><span>Versión de piloto</span></div>`;
 const coment=r=>r.comment?`<div class="muted">“${esc(r.comment)}” <button class="rep" data-act="denunciar" data-id="${esc(r.id)}">Denunciar</button></div>`:'';
 const borrar=txt=>S.form.borrar
   ?`<div class="card" style="border-color:rgba(229,88,79,.5)"><h2>¿Borrar tu cuenta?</h2><p class="tiny muted">${esc(txt)}</p><div class="row" style="margin-top:10px"><button class="btn sm crit" data-act="borrar-ok">Sí, borrar</button><button class="btn sm ghost" data-act="borrar-no">Cancelar</button></div></div>`
@@ -720,6 +753,20 @@ async function vCertificado(id){
     <div class="lista" style="margin-top:14px">${e.map(x=>`<div class="linea ${x.to?'':'act'}"><div class="row"><b class="col">${esc(x.company)}</b>${x.to?'':'<span class="chip good">Actual</span>'}</div><div class="tiny muted">${esc(x.city)} · ${fechaES(x.from)} — ${x.to?fechaES(x.to):'ahora'}</div><div class="tiny">${x.n?estrellas(+x.avg)+' <b>'+fmt(+x.avg)+'</b> <span class="muted">· '+x.n+'</span>':'<span class="muted">Sin valoraciones</span>'}</div></div>`).join('')}</div>
     <p class="tiny muted" style="margin:14px 0 0">Valoraciones de clientes reales, ligadas a la mesa y al turno de esta persona en cada local. Sin comentarios. Para comprobar que es auténtico, abre ${esc(url)}</p></div>
   <button class="btn" data-act="imprimir">${ico('print',18)}Imprimir o guardar PDF</button>`;
+}
+function vAjustes(){
+  const a=AJ.ler();
+  const opc=(act,arr,cur)=>`<div class="seg" role="radiogroup" style="grid-template-columns:repeat(${arr.length},minmax(0,1fr))">${arr.map(([v,t,x])=>`<button role="radio" aria-checked="${String(cur)===String(v)}" class="${String(cur)===String(v)?'on':''}" data-act="${act}" data-v="${v}">${x||''}${t}</button>`).join('')}</div>`;
+  const PAL=[['azul','Azul','#4e7f9c'],['verde','Verde','#377a56'],['violeta','Violeta','#7a62b3'],['naranja','Naranja','#b8672b'],['rosa','Rosa','#b04a73']];
+  const sw=(act,on,t,d)=>`<div class="row"><div class="col"><b>${t}</b><div class="tiny muted">${d}</div></div><button class="sw ${on?'on':''}" data-act="${act}" aria-pressed="${on}" aria-label="${t}"><i></i></button></div>`;
+  return `<button class="vol" data-act="atras">${ico('back',18)}Volver</button>
+  <div><h1 class="big m">Ajustes</h1><p class="lead">Ponlo a tu gusto. Se guarda en este móvil.</p></div>
+  <div class="card">${sec('aa','Tamaño del texto')}${opc('aj-tam',[[0,'Normal','<span class="aa" style="font-size:16px">Aa</span>'],[1,'Grande','<span class="aa" style="font-size:20px">Aa</span>'],[2,'Muy grande','<span class="aa" style="font-size:24px">Aa</span>']],a.tam)}</div>
+  <div class="card">${sec('ajustes','Aspecto')}${opc('aj-tema',[['auto','Automático'],['claro','Claro'],['oscuro','Oscuro']],a.tema)}<p class="tiny muted" style="margin:10px 0 0">Automático sigue el modo de tu móvil.</p></div>
+  <div class="card">${sec('star','Color')}<div class="paleta" role="radiogroup" aria-label="Color de la app">${PAL.map(([v,t,c])=>`<button class="pal ${a.paleta===v?'on':''}" role="radio" aria-checked="${a.paleta===v}" data-act="aj-paleta" data-v="${v}"><i style="background:${c}">${a.paleta===v?ico('check',22):''}</i><span>${t}</span></button>`).join('')}</div></div>
+  <div class="card"><div class="lista">${sw('aj-contraste',a.contraste,'Alto contraste','Textos y bordes más marcados.')}${sw('aj-anim',a.anim,'Animaciones','Movimientos suaves al cambiar de pantalla.')}</div></div>
+  ${S.user?`<div class="card"><div class="k">Tu cuenta</div><b style="display:block;margin:4px 0 12px;overflow-wrap:anywhere">${esc(S.user.email)}</b><button class="btn ghost" data-act="salir">${ico('out',18)}Cerrar sesión</button></div>`:''}
+  <button class="quiet" style="align-self:center" data-act="aj-reset">Restablecer ajustes</button>${pie()}`;
 }
 function vPrivacidad(){
   return `<a class="vol" href="#/">${ico('back',18)}Inicio</a><h1 class="big m">Privacidad</h1>
@@ -761,12 +808,16 @@ function vGuia(){
 }
 
 /* ---------- acciones (botones) ---------- */
-const TAM=[1,1.12,1.25];
-const aplicaTam=()=>{let i=0;try{i=+localStorage.getItem('tippyo_tam')||0}catch(e){}document.documentElement.style.zoom=TAM[i]||1};
-aplicaTam();
 const acts={
   'ver-clave'(b){const i=[...b.closest('form').querySelectorAll('input[name=password],input[name=p1],input[name=p2]')],on=i[0].type==='password';i.forEach(x=>x.type=on?'text':'password');b.textContent=on?'Ocultar contraseña':'Mostrar contraseña'},
-  tam(){let i=0;try{i=((+localStorage.getItem('tippyo_tam')||0)+1)%TAM.length;localStorage.setItem('tippyo_tam',i)}catch(e){}aplicaTam();flash(i?'Letra más grande':'Letra normal')},
+  tam(){const n=(AJ.ler().tam+1)%3;AJ.guardar({tam:n});flash(['Letra normal','Letra grande','Letra muy grande'][n])},
+  'aj-tam'(b){AJ.guardar({tam:+b.dataset.v});render()},
+  'aj-tema'(b){AJ.guardar({tema:b.dataset.v});render()},
+  'aj-paleta'(b){AJ.guardar({paleta:b.dataset.v});render()},
+  'aj-contraste'(){AJ.guardar({contraste:!AJ.ler().contraste});render()},
+  'aj-anim'(){AJ.guardar({anim:!AJ.ler().anim});render()},
+  'aj-reset'(){AJ.reset();render();flash('Ajustes restablecidos')},
+  atras(){history.length>1?history.back():(location.hash='#/')},
   async salir(){await sb.auth.signOut();S.user=null;S.co=null;location.hash='#/';render()},
   modo(b){S.form.modo=b.dataset.m;render()},
   'cuenta-cliente'(){S.form={modo:'alta'};localStorage.setItem('tippyo_rol','cliente');location.hash='#/entrar/cliente'},
