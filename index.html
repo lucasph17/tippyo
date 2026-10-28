@@ -26,9 +26,7 @@ aplicar(ler());if(mq.addEventListener)mq.addEventListener('change',function(){ap
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Tippyo</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%234e7f9c'/%3E%3Cpath d='M32 12l6.2 13 14.3 1.9-10.5 9.9 2.7 14.2L32 43.8 19.3 51l2.7-14.2L11.5 26.9 25.8 25z' fill='%23fff'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Identidad oscura, como la demo. Mismo azul y dorado. */
 :root{
@@ -142,9 +140,10 @@ h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
 .ava.on{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--good)}
 
 /* estrellas, caras */
-.st i{font-style:normal;color:var(--surface3)}.st i.on{color:var(--gold)}
+.st i{font-style:normal;color:var(--faint);opacity:.55}.st i.on{opacity:1}.st i.on{color:var(--gold)}
 .estrellas{display:flex;justify-content:center;gap:4px}
-.estrellas button{font-size:50px;line-height:1;padding:2px 3px;color:var(--surface3);transition:color .14s,transform .14s var(--ease)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.estrellas button{font-size:min(50px,13vw);line-height:1;padding:2px 1px;color:var(--faint);transition:color .14s,transform .14s var(--ease)}
 .estrellas button.on{color:var(--gold)}
 .estrellas button:active{transform:scale(.88)}
 .estrellas button.pop{animation:pop .2s var(--ease)}
@@ -232,7 +231,7 @@ button.fila{width:100%;text-align:left;display:flex;align-items:center;gap:12px}
 .qrbox .p{font-size:15px;color:#243540;margin-top:12px;line-height:1.7}.qrbox .p b{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#0d1418;color:#fff;font-size:13px}
 .qrbox .m{font-family:var(--m);font-weight:600;font-size:16px;margin-top:8px}
 .qrbox .f{font-size:12.5px;color:#6a7b86;margin-top:6px}
-.rep{font-size:14px;color:var(--muted);text-decoration:underline;padding:8px 6px;margin:-8px -2px}
+.rep{font-size:14.5px;color:var(--muted);text-decoration:underline;padding:12px 8px;margin:-12px -4px;min-height:44px}
 .doc h2{margin:14px 0 4px}.doc p,.doc li{color:var(--text2);font-size:16.5px;margin:0 0 6px}.doc ul{padding-left:18px;margin:0}
 .linea-firma{border-bottom:1px solid var(--faint);height:30px;margin:6px 0 2px}
 .pie{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:14.5px}.pie a{color:var(--muted)}.pie span{color:var(--faint)}
@@ -299,10 +298,11 @@ body.has-tabs #flash{bottom:calc(86px + env(safe-area-inset-bottom))}
 </head>
 <body>
 <div id="app"></div>
+<noscript><p style="padding:32px 24px;font:17px sans-serif;text-align:center">Tippyo necesita JavaScript. Actívalo en tu navegador para continuar.</p></noscript>
 <script src="avatars.js"></script>
 <script src="preview.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+<script src="lib/supabase.min.js"></script>
+<script src="lib/qrious.min.js"></script>
 <script>
 /* ============================================================
    Tippyo · app real (piloto). Una sola página, rutas con #.
@@ -319,6 +319,10 @@ const PREVIEW=window.TIPPYO_PREVIEW||null;
 const WEB_PUBLICA='https://lucasph17.github.io/tippyo/';
 const NATIVO=!!(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform());
 const BASE=NATIVO?WEB_PUBLICA:location.origin+location.pathname;
+if(!PREVIEW&&typeof supabase==='undefined'){
+  document.getElementById('app').innerHTML='<div style="max-width:420px;margin:0 auto;padding:48px 24px;text-align:center;font:17px/1.5 sans-serif"><h2 style="font-size:22px">No hemos podido abrir la app</h2><p>Comprueba tu conexión a internet y vuelve a intentarlo.</p><button onclick="location.reload()" style="margin-top:12px;min-height:54px;padding:0 28px;border:0;border-radius:14px;background:#7cbbdf;color:#06121a;font:600 17px sans-serif">Reintentar</button></div>';
+  throw new Error('supabase no cargó');
+}
 const sb=PREVIEW?PREVIEW.client:supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const $app=document.getElementById('app');
@@ -338,7 +342,7 @@ const ini=n=>String(n||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0])
 const tono=n=>{let h=0;for(const c of String(n||''))h=(h*31+c.charCodeAt(0))%360;return h};
 const avatar=(url,nombre,cls='')=>okFoto(url)?`<img class="ava ${cls}" src="${esc(url)}" alt="">`
   :`<div class="ava ${cls}" aria-hidden="true" style="background:var(--surface3);color:var(--text2)">${esc(ini(nombre))}</div>`;
-const estrellas=v=>{let h='<span class="st" aria-hidden="true">';for(let i=1;i<=5;i++)h+=`<i class="${v>=i-.25?'on':''}">★</i>`;return h+'</span>'};
+const estrellas=v=>{let h='<span class="st" aria-hidden="true">';for(let i=1;i<=5;i++)h+=`<i class="${v>=i-.25?'on':''}">★</i>`;return h+`</span><span class="sr">${Math.round(v*10)/10} de 5</span>`};
 const aleatorio=n=>{const A='ACDEFGHJKLMNPQRTUVWXY3479';let s='';const r=crypto.getRandomValues(new Uint8Array(n));for(const b of r)s+=A[b%A.length];return s};
 const uuid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=crypto.getRandomValues(new Uint8Array(1))[0]&15;return (c==='x'?r:(r&3|8)).toString(16)}); /* randomUUID solo existe en https/localhost */
 const rolGuardado=()=>{const r=localStorage.getItem('tippyo_rol');return r==='jefe'||r==='cliente'?r:'trabajador'};
@@ -389,10 +393,13 @@ const errTxt=e=>{
   if(/invalid_reward/.test(m))return 'Ese premio ya no está disponible.';
   if(/has_team/.test(m))return 'Antes de borrar tu cuenta, da de baja a todo tu equipo.';
   if(/rate limit/i.test(m))return 'Demasiados intentos. Espera unos minutos y vuelve a probar.';
-  if(/Failed to fetch|NetworkError/i.test(m))return 'No hay conexión con el servidor. Comprueba tu internet.';
+  if(/Failed to fetch|NetworkError|Load failed/i.test(m))return 'No hay conexión con el servidor. Comprueba tu internet.';
+  if(/rate_limited/.test(m))return 'Hay muchas valoraciones seguidas. Prueba de nuevo dentro de un rato.';
+  if(/weak|at least|should contain/i.test(m))return 'Elige una contraseña más larga o menos común.';
+  if(/invalid.*email|validate email/i.test(m))return 'Revisa el correo: parece que no está bien escrito.';
   return /^[A-ZÁÉÍÓÚ¿¡][^_]*\.$/.test(m)&&/\b(el|la|de|no|que|una|tu|en)\b/i.test(m)?m:'Algo no ha ido bien. Inténtalo otra vez en un momento.';
 };
-const flash=(text,tipo='ok')=>{S.msg={text,tipo};pintaFlash();clearTimeout(flashT);flashT=setTimeout(()=>{S.msg=null;pintaFlash()},4500)};
+const flash=(text,tipo='ok')=>{S.msg={text,tipo};pintaFlash();clearTimeout(flashT);flashT=setTimeout(()=>{S.msg=null;pintaFlash()},tipo==='err'?9000:5000)};
 const flashHtml=()=>S.msg?`<div class="flash ${S.msg.tipo}" role="status">${ico(S.msg.tipo==='ok'?'check':'lock',18)}<span>${esc(S.msg.text)}</span></div>`:'';
 const pintaFlash=()=>{const f=document.getElementById('flash');if(f)f.innerHTML=flashHtml()};
 const tarjeta=(titulo,txt,extra='')=>`<div class="card warn"><h2>${esc(titulo)}</h2><p class="lead">${esc(txt)}</p>${extra}</div>`;
@@ -417,12 +424,12 @@ async function subirFoto(file){
 
 /* ---------- marco y rutas ---------- */
 const ruta=()=>location.hash.replace(/^#\/?/,'').split('/').filter(Boolean).map(decodeURIComponent);
-const marco=(html,entra)=>`<div class="top"><a class="marca" href="#/"><i>★</i>${esc(MARCA.toUpperCase())}</a><div class="quien"><button class="icbtn" data-act="tam" aria-label="Cambiar el tamaño de la letra">${ico('aa',21)}</button><a class="icbtn" href="#/ajustes" aria-label="Ajustes">${ico('ajustes',21)}</a>${S.user?`<button class="icbtn" data-act="salir" aria-label="Salir">${ico('out',19)}</button>`:''}</div></div><main class="wrap${entra?' enter':''}"><div id="flash">${flashHtml()}</div>${html}</main>${navTabs()}${PREVIEW?'<div class="vista">VISTA PREVIA</div>':''}`;
+const marco=(html,entra)=>`<div class="top"><a class="marca" href="#/"><i>★</i>${esc(MARCA.toUpperCase())}</a><div class="quien"><button class="icbtn" data-act="tam" aria-label="Cambiar el tamaño de la letra">${ico('aa',21)}</button><a class="icbtn" href="#/ajustes" aria-label="Ajustes">${ico('ajustes',21)}</a>${S.user?`<button class="icbtn" data-act="salir" aria-label="Salir">${ico('out',19)}</button>`:''}</div></div><main class="wrap${entra?' enter':''}"><div id="flash" role="status" aria-live="polite">${flashHtml()}</div>${html}</main>${navTabs()}${PREVIEW?'<div class="vista">VISTA PREVIA</div>':''}`;
 const navTabs=()=>{const t=S.tabs;if(!t||t.base!==ruta()[0]||!S.user)return '';
   return `<nav class="tabs" aria-label="Secciones"><div class="tabs-in">${t.items.map(([k,n,i])=>`<a href="#/${t.base}/${k}" class="${t.actual===k?'on':''}" ${t.actual===k?'aria-current="page"':''}>${ico(i,22)}<span>${n}</span></a>`).join('')}</div></nav>`};
 const esqueleto='<div class="sk" style="height:110px"></div><div class="sk"></div><div class="sk" style="height:150px"></div>';
 async function guard(rol,fn){
-  if(!S.user){localStorage.setItem('tippyo_rol',rol);location.hash='#/entrar/'+rol;return null}
+  if(!S.user){localStorage.setItem('tippyo_rol',rol);location.replace('#/entrar/'+rol);return null}
   return fn();
 }
 async function render(){
@@ -443,7 +450,7 @@ async function render(){
     else if(r[0]==='jefe')html=await guard('jefe',vJefe);
     else if(r[0]==='trabajador')html=await guard('trabajador',vTrabajador);
     else html=vInicio();
-  }catch(e){console.error(e);html=tarjeta('Algo ha fallado',errTxt(e),'<a class="btn ghost" style="margin-top:12px" href="#/">Volver al inicio</a>')}
+  }catch(e){console.error(e);html=tarjeta('Vaya, no hemos podido cargarlo',errTxt(e),'<button class="btn" style="margin-top:12px" data-act="reintentar">Reintentar</button><a class="btn ghost" style="margin-top:10px" href="#/">Volver al inicio</a>')}
   if(n!==renderN||html==null)return;
   $app.innerHTML=marco(html,nueva);
   S.pintado=clave;S.anim=false;S.nuevo=null;
@@ -478,7 +485,7 @@ function vInicio(){
 function vEntrar(rol){
   rol=['jefe','cliente'].includes(rol)?rol:'trabajador';
   localStorage.setItem('tippyo_rol',rol);
-  if(S.user){location.hash='#/'+rutaRol(rol);return null}
+  if(S.user){location.replace('#/'+rutaRol(rol));return null}
   const alta=S.form.modo==='alta';
   return `<a class="vol" href="#/">${ico('back',18)}Inicio</a>
   <div class="row"><span class="tile" style="padding:0;border:0;background:none"><span class="bub b1">${ico({jefe:'shop',cliente:'star'}[rol]||'user',26)}</span></span><div><div class="k">${{jefe:'Responsable de local',cliente:'Cliente'}[rol]||'Trabajador'}</div><h1 class="big m">${alta?'Crea tu cuenta':'Bienvenido'}</h1></div></div>
@@ -508,7 +515,7 @@ async function vCliente(cid,mesa,tok){
     sb.rpc('log_scan',{p_company:cid,p_table:+mesa,p_token:tok,p_device:dispositivo()}).then(()=>{},()=>{});
   }
   const {co,eq}=S.mesaCache,pop=S.anim;
-  if(!co||!eq.length)return tarjeta('No podemos abrir esta mesa','El QR no es de este local o ahora mismo no hay nadie en turno. Pregunta en barra.');
+  if(!co||!eq.length){S.mesaCache=null;return tarjeta('Aún no hay nadie para valorar','Ahora mismo no hay nadie de turno en esta mesa. Si trabajas aquí, tu responsable puede activar el turno. Prueba otra vez en un rato.','<button class="btn" style="margin-top:12px" data-act="reintentar">Probar otra vez</button>')}
   const cab=`<div><div class="k">${esc(co.city)} · mesa ${esc(mesa)}</div><h1 class="big m">${esc(co.name)}</h1></div>`;
   const pk=S.mesaCache.perks||{},ganado=[S.form.tp>0?`+${S.form.tp} punto Tippyo`:'',S.form.pts>0?`+${S.form.pts} punto en ${esc(co.name)}`:''].filter(Boolean).join(' · ');
   const oferta=[pk.tippyo?'puntos Tippyo para canjear por descuentos de marcas':'',pk.local?'premios de este local':''].filter(Boolean).join(' y ');
@@ -521,9 +528,9 @@ async function vCliente(cid,mesa,tok){
   const nota=S.form.nota||0,com=S.form.com||'';
   return `<button class="vol" data-act="otra">${ico('back',18)}Otra persona</button>
   <div class="centro">${avatar(t.photo_url,t.full_name,'xl')}<h2 style="font-size:22px;margin-top:6px">${esc(t.full_name)}</h2><span class="muted">${esc(t.job_title||'')}</span></div>
-  <div class="estrellas" role="group" aria-label="Nota">${[1,2,3,4,5].map(i=>`<button class="${nota>=i?'on':''} ${pop&&nota===i?'pop':''}" data-act="nota" data-v="${i}" aria-label="${i} estrellas">★</button>`).join('')}</div>
+  <div class="estrellas" role="radiogroup" aria-label="Nota">${[1,2,3,4,5].map(i=>`<button role="radio" aria-checked="${nota===i}" class="${nota>=i?'on':''} ${pop&&nota===i?'pop':''}" data-act="nota" data-v="${i}" aria-label="${i} ${i===1?'estrella':'estrellas'}">★</button>`).join('')}</div>
   <div class="cara-t" aria-live="polite">${CARAS_T[nota]||'Toca una estrella'}</div>
-  <div class="chips">${ETIQ.map(x=>`<button class="chip ${com.includes(x)?'on':''}" data-act="chip" data-v="${x}">${x}</button>`).join('')}</div>
+  <div class="chips">${ETIQ.map(x=>`<button class="chip ${com.includes(x)?'on':''}" aria-pressed="${com.includes(x)}" data-act="chip" data-v="${x}">${x}</button>`).join('')}</div>
   <div class="campo"><textarea id="com" data-keep="com" maxlength="120" aria-label="Comentario" placeholder="¿Quieres añadir algo? (opcional)">${esc(com)}</textarea></div>
   <button class="btn gold" data-act="enviar" ${nota?'':'disabled'}>${nota?'Enviar mi valoración':'Primero elige una nota'}</button>
   <p class="tiny muted" style="text-align:center;margin:0">Anónimo · la persona y el responsable del local verán tu nota y tu comentario, nunca quién eres.</p>`;
@@ -581,7 +588,7 @@ async function vJefe(){
       <div class="row">${avatar(p.photo_url,p.full_name,on?'on':'')}<div class="col"><b>${esc(p.full_name)}</b>
         <div class="muted tiny">${esc(s.job_title||p.job_title||'')}</div>
         <div class="tiny">${v.length?estrellas(media(v))+' <b>'+fmt(media(v))+'</b> <span class="muted">· '+v.length+'</span>':'<span class="muted">Sin valoraciones</span>'}</div></div>
-        ${auto?'<span class="chip good">En turno</span>':`<div style="text-align:center"><button class="sw ${on?'on':''}" data-act="turno" data-id="${esc(s.id)}" data-on="${on?1:0}" aria-label="Trabaja hoy" aria-pressed="${on}"><i></i></button><div class="tiny muted" style="margin-top:3px">En turno</div></div>`}</div>
+        ${auto?'<span class="chip good">En turno</span>':`<div style="text-align:center"><button class="sw ${on?'on':''}" data-act="turno" data-id="${esc(s.id)}" data-on="${on?1:0}" aria-label="Trabaja hoy: ${esc(p.full_name)}" aria-pressed="${on}"><i></i></button><div class="tiny muted" style="margin-top:3px">En turno</div></div>`}</div>
       ${pend?`<div class="card warn" style="margin-top:10px;padding:12px"><div class="row">${okFoto(p.photo_pending_url)?`<img class="ava xl" style="width:64px;height:64px;border-radius:18px" src="${esc(p.photo_pending_url)}" alt="">`:ico('camera',28)}<div class="col"><b>Foto nueva</b><div class="tiny muted">Cara visible, fondo liso.</div></div></div>
         <div class="row" style="margin-top:10px"><button class="btn sm" data-act="foto-ok" data-id="${esc(s.worker_id)}">${ico('check',16)}Aprobar</button><button class="btn sm ghost" data-act="foto-no" data-id="${esc(s.worker_id)}">Pedir otra</button></div></div>`:''}
       <div style="margin-top:10px">${S.form.baja===s.id
@@ -677,8 +684,8 @@ async function vTrabajador(){
       <div class="col"><h2>${esc(actual.companies?actual.companies.name:'—')}</h2><div class="muted tiny">${esc(actual.companies?actual.companies.city:'')} · desde ${fechaES(actual.started_at)}</div>
       <div style="margin-top:4px">${vs.length?`${estrellas(media(vs))} <span class="muted tiny">${vs.length} valoraciones</span>`:'<span class="muted tiny">Aún sin valoraciones</span>'}</div></div></div>
       ${vs.length?`<div class="lista" style="margin-top:12px">${vs.slice(0,4).map(x=>`<div><div>${estrellas(x.stars)} <span class="tiny muted">${fechaES(x.created_at)}</span></div>${coment(x)}</div>`).join('')}</div>`:''}</div>`
-  :`<div class="card">${sec('key','Entra en tu empresa')}
-      <form data-form="codigo" style="margin-top:8px"><div class="campo"><input id="cod" name="codigo" required maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Código" style="font-family:var(--m);font-size:22px;letter-spacing:.2em;text-align:center;text-transform:uppercase" placeholder="XX-0000"></div><button class="btn" type="submit">Entrar</button></form></div>`}`;
+  :`<div class="card">${sec('key','Únete a tu equipo')}
+      <form data-form="codigo" style="margin-top:8px"><div class="campo"><input id="cod" name="codigo" required maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Código" style="font-family:var(--m);font-size:22px;letter-spacing:.2em;text-align:center;text-transform:uppercase" placeholder="Tu código"></div><button class="btn" type="submit">Entrar</button></form></div>`}`;
   const pHistorial=`<div class="card">${sec('clock','Mi historial','<span class="chip">'+ico('lock',13)+'&nbsp;Solo tú</span>')}
     <div class="lista" style="margin-top:8px;gap:0">${e.data.length?e.data.map(x=>{const v=por[x.id]||[];return `<div class="linea ${x.ended_at?'':'act'}"><div class="row"><b class="col">${esc(x.companies?x.companies.name:'—')}</b>${x.ended_at?'':'<span class="chip good">Actual</span>'}</div><div class="tiny muted">${fechaES(x.started_at)} — ${x.ended_at?fechaES(x.ended_at):'ahora'}</div><div class="tiny">${v.length?estrellas(media(v))+' <b>'+fmt(media(v))+'</b> <span class="muted">· '+v.length+'</span>':'<span class="muted">Sin valoraciones</span>'}</div></div>`}).join(''):vacio('clock','Tu historial empieza cuando entres en una empresa')}</div></div>
   <div class="card"><div class="row"><div class="col"><h2>Compartir mi historial</h2><p class="tiny muted" style="margin:4px 0 0">${pf.share_history?'Quien te contacte verá tu media y tus etapas.':'Ahora mismo nadie lo ve.'}</p></div><button class="sw ${pf.share_history?'on':''}" data-act="compartir" aria-label="Compartir mi historial" aria-pressed="${!!pf.share_history}"><i></i></button></div></div>
@@ -725,7 +732,7 @@ async function vTarjeta(){
 
 /* ---------- contraseña, edición de datos ---------- */
 function vClave(){
-  if(!S.user){location.hash='#/entrar/'+rolGuardado();return null}
+  if(!S.user){location.replace('#/entrar/'+rolGuardado());return null}
   return `<h1 class="big m">Nueva contraseña</h1>
   <form data-form="clave"><div class="campo"><label for="p1">Contraseña · mínimo 8</label><input id="p1" name="p1" type="password" required minlength="8" autocomplete="new-password"></div>
   <div class="campo"><label for="p2">Repítela</label><input id="p2" name="p2" type="password" required minlength="8" autocomplete="new-password"></div>
@@ -817,7 +824,10 @@ function vGuia(){
 }
 
 /* ---------- acciones (botones) ---------- */
+const confirma=b=>{if(b.dataset.ok==='1')return true;const t=b.innerHTML;b.dataset.ok='1';b.textContent='¿Seguro? Toca otra vez';
+  setTimeout(()=>{if(b.isConnected){b.dataset.ok='0';b.innerHTML=t}},4000);return false};
 const acts={
+  reintentar(){S.mesaCache=null;S.dj=S.dt=null;render()},
   'ver-clave'(b){const i=[...b.closest('form').querySelectorAll('input[name=password],input[name=p1],input[name=p2]')],on=i[0].type==='password';i.forEach(x=>x.type=on?'text':'password');b.textContent=on?'Ocultar contraseña':'Mostrar contraseña'},
   tam(){const n=(AJ.ler().tam+1)%3;AJ.guardar({tam:n});flash(['Letra normal','Letra grande','Letra muy grande'][n])},
   'aj-tam'(b){AJ.guardar({tam:+b.dataset.v});render()},
@@ -837,11 +847,14 @@ const acts={
     S.form.com=c.includes(v)?c.replace(new RegExp('(, )?'+v),'').replace(/^, /,''):(c?c+', '+v:v).slice(0,120);
     render()},
   otra(){S.form={};render()},
-  async enviar(){
+  async enviar(b){
+    if(S.enviando)return;S.enviando=true;if(b)b.disabled=true;
+    try{
     const r=ruta();
     const {data,error}=await sb.rpc('submit_rating',{p_stint:S.form.sel,p_table:+r[2],p_token:r[3],p_stars:S.form.nota,p_comment:S.form.com||'',p_device:dispositivo()});
     if(error)throw error;
     const nom=((document.querySelector('.centro h2')||{}).textContent||'').split(' ')[0],d=data&&typeof data==='object'?data:{};S.form={hecho:true,nom,pts:+d.local||0,tp:+d.tippyo||0};render();
+    }finally{S.enviando=false;if(b)b.disabled=false}
   },
   async turno(b){
     const id=b.dataset.id,on=b.dataset.on==='1';
@@ -879,7 +892,7 @@ const acts={
     if(error){render();throw error}
     flash(on?'Turno automático desactivado. Marca tú cada día.':'Turno automático activado.');setTimeout(render,260)},
   async 'todos-hoy'(){
-    const {error}=await sb.from('shifts').insert(S.sinTurno.map(id=>({stint_id:id})));
+    const {error}=await sb.from('shifts').upsert(S.sinTurno.map(id=>({stint_id:id})),{onConflict:'stint_id,day',ignoreDuplicates:true});
     if(error)throw error;flash('Todo el equipo marcado para hoy.');render()},
   async olvido(){
     const email=String(S.form.email||'').trim();
@@ -896,12 +909,15 @@ const acts={
     a.download='valoraciones-'+hoy()+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
     flash('Valoraciones exportadas')},
   async canjear(b){
+    if(!confirma(b))return;
     const {data,error}=await sb.rpc('redeem_reward',{p_reward:b.dataset.id});if(error)throw error;
     flash(`Cupón ${data} creado. Enséñaselo al responsable.`);render()},
   async 'canjear-tippyo'(b){
+    if(!confirma(b))return;
     const {data,error}=await sb.rpc('redeem_platform',{p_reward:b.dataset.id});if(error)throw error;
     flash(`Descuento listo: ${data.code}`);render()},
   async entregar(b){
+    if(!confirma(b))return;
     const {error}=await sb.rpc('use_redemption',{p_code:b.dataset.code});if(error)throw error;
     flash('Cupón entregado.');render()},
   async 'premio-toggle'(b){
@@ -917,15 +933,16 @@ const acts={
     S.form.rotar=null;flash(`QR de la mesa ${b.dataset.n} renovado. Imprime el nuevo.`);render()},
   'imprimir-todas'(){
     const base=`${BASE}#/m/${S.co.id}/`,h=document.createElement('div');
-    h.className='hoja';
+    document.querySelectorAll('.hoja').forEach(x=>x.remove());h.className='hoja';
     h.innerHTML=S.mesas.map(m=>`<div class="pegatina"><div class="h">Valora a quien te atiende</div><div class="n">${esc(S.co.name)}</div><canvas data-qr="${esc(base+m.table_no+'/'+m.token)}"></canvas><div class="p">${PASOS}</div><div class="m">MESA ${m.table_no}</div><div class="f">Sin instalar nada · anónimo · ★ Tippyo</div></div>`).join('');
     document.querySelector('.wrap').appendChild(h);dibujaQR();document.body.classList.add('todas');
     const fin=()=>{document.body.classList.remove('todas');h.remove();removeEventListener('afterprint',fin)};
     addEventListener('afterprint',fin);print();
   },
   async denunciar(b){
+    if(!confirma(b))return;
     const {error}=await sb.from('reports').insert({rating_id:b.dataset.id,reason:'comentario'});if(error)throw error;
-    b.disabled=true;b.textContent='Denunciado';flash('Gracias. Lo revisaremos.')},
+    b.disabled=true;b.textContent='Denunciado';flash('Gracias, hemos guardado tu aviso.')},
   'borrar-pedir'(){S.form.borrar=true;render()},
   'borrar-no'(){S.form.borrar=false;render()},
   async 'borrar-ok'(){
@@ -954,7 +971,7 @@ const forms={
     }else{
       const {error}=await sb.auth.signInWithPassword(cred);if(error)throw error;
     }
-    location.hash='#/'+rutaRol(rol);
+    location.replace('#/'+rutaRol(rol));
   },
   async empresa(f){
     const d=new FormData(f),t=k=>String(d.get(k)||'').trim();
@@ -984,7 +1001,7 @@ const forms={
     const d=new FormData(f),p=String(d.get('p1'));
     if(p!==String(d.get('p2')))throw new Error('Las contraseñas no coinciden.');
     const {error}=await sb.auth.updateUser({password:p});if(error)throw error;
-    S.recovery=false;location.hash='#/'+rutaRol(rolGuardado());flash('Contraseña actualizada.')},
+    S.recovery=false;location.replace('#/'+rutaRol(rolGuardado()));flash('Contraseña actualizada.')},
   async 'perfil-ed'(f){
     const d=new FormData(f);
     const {error}=await sb.from('profiles').update({full_name:String(d.get('nombre')).trim(),job_title:String(d.get('puesto'))}).eq('id',S.user.id);
@@ -997,7 +1014,7 @@ const forms={
     const pf=await sb.from('profiles').select('job_title').eq('id',S.user.id).maybeSingle();
     const {error}=await sb.rpc('redeem_code',{p_code:String(new FormData(f).get('codigo')).trim(),p_job:(pf.data&&pf.data.job_title)||null});
     if(error)throw error;
-    S.pintado=null;flash('Ya estás en la plantilla. Tu jefe te marcará los días que trabajes.');render();
+    S.pintado=null;flash('Ya estás en el equipo. Tu responsable te marcará los días que trabajes, o lo hará solo si tiene el turno automático.');render();
   }
 };
 
@@ -1027,20 +1044,22 @@ document.addEventListener('change',async ev=>{
 
 /* ---------- arranque ---------- */
 sb.auth.onAuthStateChange((ev,ses)=>{
-  S.user=ses?ses.user:null;
-  if(ev==='PASSWORD_RECOVERY'){S.recovery=true;setTimeout(()=>{location.hash='#/nueva-clave'},0);return}
+  const antes=S.user&&S.user.id;S.user=ses?ses.user:null;
+  if(ev==='PASSWORD_RECOVERY'){S.recovery=true;setTimeout(()=>{location.replace('#/nueva-clave')},0);return}
   /* Llegada desde el enlace de confirmación del correo: te lleva a tu panel. */
   if(ev==='SIGNED_IN'&&!S.confirmado&&/access_token|type=(signup|magiclink|recovery)/.test(hashInicial)){
     S.confirmado=true;
-    setTimeout(()=>{location.hash='#/'+rutaRol(rolGuardado())},0);
+    setTimeout(()=>{location.replace('#/'+rutaRol(rolGuardado()))},0);
     return;
   }
+  if((ev==='TOKEN_REFRESHED'||ev==='INITIAL_SESSION'||ev==='SIGNED_IN'||ev==='USER_UPDATED')&&S.pintado&&antes===(S.user&&S.user.id))return; /* misma persona: no repintes y pierdas lo que escribías */
   setTimeout(render,0); /* no llamar a Supabase dentro de este callback: provoca bloqueos */
 });
+let rutaPrev=ruta()[0];
 window.addEventListener('hashchange',()=>{
-  const e=ruta()[0]==='entrar';
-  S.form=e?{modo:S.form.modo,email:S.form.email}:{};
-  render();
+  const r0=ruta()[0],e=r0==='entrar',fijas=['ajustes','privacidad','consentimiento','guia'];
+  if(!(fijas.includes(r0)||fijas.includes(rutaPrev)))S.form=e?{modo:S.form.modo,email:S.form.email}:{};
+  rutaPrev=r0;render();
 });
 (async()=>{const {data}=await sb.auth.getSession();S.user=data.session?data.session.user:null;render()})();
 </script>
